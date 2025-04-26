@@ -61,7 +61,7 @@ extern volatile adc_buf_t adc_buffer;
 uint8_t buzzerFreq          = 0;
 uint8_t buzzerPattern       = 0;
 uint8_t buzzerCount         = 0;
-volatile uint32_t buzzerTimer = 0;
+volatile uint32_t bldc_timer = 0;
 static uint8_t  buzzerPrev  = 0;
 static uint8_t  buzzerIdx   = 0;
 
@@ -101,7 +101,7 @@ void DMA1_Channel1_IRQHandler(void) {
     return;
   }
 
-  if (buzzerTimer % 1000 == 0) {  // Filter battery voltage at a slower sampling rate
+  if (bldc_timer % 1000 == 0) {  // Filter battery voltage at a slower sampling rate
     filtLowPass32(adc_buffer.batt1, BAT_FILT_COEF, &batVoltageFixdt);
     batVoltage = (int16_t)(batVoltageFixdt >> 16);  // convert fixed-point to integer
   }
@@ -131,15 +131,15 @@ void DMA1_Channel1_IRQHandler(void) {
   }
 
   // Create square wave for buzzer
-  buzzerTimer++;
-  if (buzzerFreq != 0 && (buzzerTimer / 5000) % (buzzerPattern + 1) == 0) {
+  bldc_timer++;
+  if (buzzerFreq != 0 && (bldc_timer / 5000) % (buzzerPattern + 1) == 0) {
     if (buzzerPrev == 0) {
       buzzerPrev = 1;
       if (++buzzerIdx > (buzzerCount + 2)) {    // pause 2 periods
         buzzerIdx = 1;
       }
     }
-    if (buzzerTimer % buzzerFreq == 0 && (buzzerIdx <= buzzerCount || buzzerCount == 0)) {
+    if (bldc_timer % buzzerFreq == 0 && (buzzerIdx <= buzzerCount || buzzerCount == 0)) {
       HAL_GPIO_TogglePin(BUZZER_PORT, BUZZER_PIN);
     }
   } else if (buzzerPrev) {
