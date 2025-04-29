@@ -24,7 +24,6 @@
 
 #include "defines.h"
 #include "config.h"
-#include "eeprom.h"
 #include "app.h"
 #include "BLDC_controller.h"
 #include "rtwtypes.h"
@@ -1677,23 +1676,25 @@ void saveConfig()
 #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
 		printf("Saving configuration to EEprom\r\n");
 #endif
+		uint16_t configuration[NB_OF_VAR];
+		
+		configuration[0] = (uint16_t)FLASH_WRITE_KEY;
+		configuration[1] = (uint16_t)rtP_Left.i_max;
+		configuration[2] = (uint16_t)rtP_Left.n_max;
 
-		HAL_FLASH_Unlock();
-		EE_WriteVariable(VirtAddVarTab[0], (uint16_t)FLASH_WRITE_KEY);
-		EE_WriteVariable(VirtAddVarTab[1], (uint16_t)rtP_Left.i_max);
-		EE_WriteVariable(VirtAddVarTab[2], (uint16_t)rtP_Left.n_max);
 		for (uint8_t i = 0; i < INPUTS_NR; i++)
 		{
-			EE_WriteVariable(VirtAddVarTab[3 + 8 * i], (uint16_t)input1[i].typ);
-			EE_WriteVariable(VirtAddVarTab[4 + 8 * i], (uint16_t)input1[i].min);
-			EE_WriteVariable(VirtAddVarTab[5 + 8 * i], (uint16_t)input1[i].mid);
-			EE_WriteVariable(VirtAddVarTab[6 + 8 * i], (uint16_t)input1[i].max);
-			EE_WriteVariable(VirtAddVarTab[7 + 8 * i], (uint16_t)input2[i].typ);
-			EE_WriteVariable(VirtAddVarTab[8 + 8 * i], (uint16_t)input2[i].min);
-			EE_WriteVariable(VirtAddVarTab[9 + 8 * i], (uint16_t)input2[i].mid);
-			EE_WriteVariable(VirtAddVarTab[10 + 8 * i], (uint16_t)input2[i].max);
+			configuration[3 + 8 * i] = (uint16_t)input1[i].typ;
+			configuration[4 + 8 * i] = (uint16_t)input1[i].min;
+			configuration[5 + 8 * i] = (uint16_t)input1[i].mid;
+			configuration[6 + 8 * i] = (uint16_t)input1[i].max;
+			configuration[7 + 8 * i] = (uint16_t)input2[i].typ;
+			configuration[8 + 8 * i] = (uint16_t)input2[i].min;
+			configuration[9 + 8 * i] = (uint16_t)input2[i].mid;
+			configuration[10 + 8 * i] = (uint16_t)input2[i].max;
 		}
-		HAL_FLASH_Lock();
+
+		hardware.write_configuration(configuration);
 	}
 #endif
 }

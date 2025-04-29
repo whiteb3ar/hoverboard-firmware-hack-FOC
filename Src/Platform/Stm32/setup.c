@@ -215,6 +215,18 @@ void read_configuration(uint16_t *configuration)
   HAL_FLASH_Lock();
 }
 
+void write_configuration(uint16_t *configuration)
+{
+  HAL_FLASH_Unlock();
+
+  for (uint8_t i = 0; i < NB_OF_VAR; i++)
+  {
+    EE_WriteVariable(VirtAddVarTab[i], configuration[i]);
+  }
+
+  HAL_FLASH_Lock();
+}
+
 int is_uart3_available(void)
 {
   return __HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0;

@@ -150,6 +150,8 @@ typedef struct
   void (*init_eeprom)(void);
   void (*read_configuration)(uint16_t *buffer);
   void (*read_configuration_value)(uint16_t address, uint16_t *value);
+  void (*write_configuration)(uint16_t *buffer);
+  void (*write_configuration_value)(uint16_t address, uint16_t *value);
 
   void (*toggle_buzzer)(void);
   void (*switch_buzzer_off)(void);

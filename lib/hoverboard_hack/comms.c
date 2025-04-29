@@ -23,7 +23,6 @@
 #include <string.h>
 #include "config.h"
 #include "defines.h"
-#include "eeprom.h"
 #include "BLDC_controller.h"
 #include "app.h"
 #include "comms.h"
