@@ -8,7 +8,7 @@
 #ifndef INC_PCF8574_H_
 #define INC_PCF8574_H_
 
-#include "stm32f1xx_hal.h"
+#include <stdint.h>
 
 /** @file	pcf8574.h
  * @brief	In order to use this you have to create a PCF8574_HandleTypeDef variable (e.g. "pcf").
@@ -38,10 +38,10 @@ typedef enum{
  * PCF8574 handle structure which wraps all the necessary variables together in
  * order to simplify the communication with the chip
  */
-typedef struct{
+typedef struct {
 	uint8_t				PCF_I2C_ADDRESS;	/**< address of the chip you want to communicate with */
 	uint32_t			PCF_I2C_TIMEOUT;	/**< timeout value for the communication in milliseconds */
-	I2C_HandleTypeDef 	i2c;				/**< I2C_HandleTypeDef structure */
+	void*				i2c;				/**< Platform specific I2C_Handle structure */
 	void				(*errorCallback)(PCF8574_RESULT);
 } PCF8574_HandleTypeDef;
 

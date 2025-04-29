@@ -5,6 +5,7 @@
  *      Author: Peter
  */
 
+#include "platform.h"
 #include "hd44780.h"
 
 uint32_t PCF8574_Type0Pins[8] = {4, 5, 6, 7, 0, 1, 2, 3};
@@ -76,7 +77,7 @@ LCD_RESULT LCD_Init(LCD_PCF8574_HandleTypeDef *handle)
 		return LCD_ERROR;
 	}
 
-	// HAL_Delay(50);
+	// delay(50);
 	LCD_StateWriteBit(handle, 0, LCD_PIN_RS);
 	LCD_StateWriteBit(handle, 0, LCD_PIN_RW);
 	LCD_StateWriteBit(handle, 0, LCD_PIN_E);
@@ -84,30 +85,30 @@ LCD_RESULT LCD_Init(LCD_PCF8574_HandleTypeDef *handle)
 	LCD_WriteToDataBus(handle, 3);
 
 	LCD_StateWriteBit(handle, 1, LCD_PIN_E);
-	HAL_Delay(1);
+	delay(1);
 	LCD_StateWriteBit(handle, 0, LCD_PIN_E);
-	HAL_Delay(5);
+	delay(5);
 
 	LCD_WriteToDataBus(handle, 3);
 
 	LCD_StateWriteBit(handle, 1, LCD_PIN_E);
-	HAL_Delay(1);
+	delay(1);
 	LCD_StateWriteBit(handle, 0, LCD_PIN_E);
-	HAL_Delay(1);
+	delay(1);
 
 	LCD_WriteToDataBus(handle, 3);
 
 	LCD_StateWriteBit(handle, 1, LCD_PIN_E);
-	HAL_Delay(1);
+	delay(1);
 	LCD_StateWriteBit(handle, 0, LCD_PIN_E);
-	HAL_Delay(1);
+	delay(1);
 
 	LCD_WriteToDataBus(handle, 2);
 
 	LCD_StateWriteBit(handle, 1, LCD_PIN_E);
-	HAL_Delay(1);
+	delay(1);
 	LCD_StateWriteBit(handle, 0, LCD_PIN_E);
-	HAL_Delay(1);
+	delay(1);
 
 	uint8_t cmd = 0;
 	cmd = cmd | (handle->NUMBER_OF_LINES << 3);
