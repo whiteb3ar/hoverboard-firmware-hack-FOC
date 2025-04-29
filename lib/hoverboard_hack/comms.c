@@ -21,13 +21,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "stm32f1xx_hal.h"
 #include "config.h"
 #include "defines.h"
 #include "eeprom.h"
 #include "BLDC_controller.h"
 #include "util.h"
 #include "comms.h"
+#include "buzzer.h"
 
 #if defined(DEBUG_SERIAL_PROTOCOL)
 #if defined(DEBUG_SERIAL_PROTOCOL) && (defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3))
@@ -64,6 +64,8 @@ extern int16_t right_dc_curr;
 extern int16_t dc_curr;
 extern int16_t cmdL;
 extern int16_t cmdR;
+
+extern Buzzer buzzer;
 
 enum commandTypes
 {
@@ -230,7 +232,7 @@ int8_t setParamValInt(uint8_t index, int32_t newValue)
     }
 
     // Beep if value was modified
-    beepShort(5);
+    beepShort(&buzzer, 5);
   }
 
   // Run callback function if assigned
