@@ -67,32 +67,37 @@ void light_led();
 void start_adc();
 int is_button_pressed();
 int is_uart3_available(void);
-void uart3_transmit(uint8_t * data, int size);
+void uart3_transmit(uint8_t *data, int size);
 void reset(void);
 
 void init_eeprom(void);
-void read_configuration(uint16_t* buffer);
-void read_configuration_value(uint16_t address, uint16_t* value);
+void read_configuration(uint16_t *buffer);
+void read_configuration_value(uint16_t address, uint16_t *value);
 
-void uart2_putchar(char* data) {
+void uart2_putchar(char *data)
+{
   HAL_UART_Transmit(&huart2, (uint8_t *)data, 1, 1000);
 }
 
-void uart3_putchar(char* data) {
+void uart3_putchar(char *data)
+{
   HAL_UART_Transmit(&huart3, (uint8_t *)data, 1, 1000);
 }
 
-void unit_uart2_dma(uint8_t* buffer, int size) {
+void unit_uart2_dma(uint8_t *buffer, int size)
+{
   HAL_UART_Receive_DMA(&huart2, buffer, size);
   UART_DisableRxErrors(&huart2);
 }
 
-void unit_uart3_dma(uint8_t* buffer, int size) {
+void unit_uart3_dma(uint8_t *buffer, int size)
+{
   HAL_UART_Receive_DMA(&huart2, buffer, size);
   UART_DisableRxErrors(&huart3);
 }
 
-void set_left_motor_disabled(uint8_t disabled) {
+void set_left_motor_disabled(uint8_t disabled)
+{
   if (disabled)
   {
     LEFT_TIM->BDTR &= ~TIM_BDTR_MOE;
@@ -103,19 +108,22 @@ void set_left_motor_disabled(uint8_t disabled) {
   }
 }
 
-void read_left_motor_hall(uint8_t* values) {
+void read_left_motor_hall(uint8_t *values)
+{
   values[0] = !(LEFT_HALL_U_PORT->IDR & LEFT_HALL_U_PIN);
   values[1] = !(LEFT_HALL_V_PORT->IDR & LEFT_HALL_V_PIN);
   values[2] = !(LEFT_HALL_W_PORT->IDR & LEFT_HALL_W_PIN);
 }
 
-void set_left_motor_pwm(uint16_t u, uint16_t v, uint16_t w) {
+void set_left_motor_pwm(uint16_t u, uint16_t v, uint16_t w)
+{
   LEFT_TIM->LEFT_TIM_U = u;
   LEFT_TIM->LEFT_TIM_V = v;
   LEFT_TIM->LEFT_TIM_W = w;
 }
 
-void set_right_motor_disabled(uint8_t disabled) {
+void set_right_motor_disabled(uint8_t disabled)
+{
   if (disabled)
   {
     RIGHT_TIM->BDTR &= ~TIM_BDTR_MOE;
@@ -126,93 +134,99 @@ void set_right_motor_disabled(uint8_t disabled) {
   }
 }
 
-void read_right_motor_hall(uint8_t* values) {
+void read_right_motor_hall(uint8_t *values)
+{
   values[0] = !(RIGHT_HALL_U_PORT->IDR & RIGHT_HALL_U_PIN);
   values[1] = !(RIGHT_HALL_V_PORT->IDR & RIGHT_HALL_V_PIN);
   values[2] = !(RIGHT_HALL_W_PORT->IDR & RIGHT_HALL_W_PIN);
 }
 
-void set_right_motor_pwm(uint16_t u, uint16_t v, uint16_t w) {
+void set_right_motor_pwm(uint16_t u, uint16_t v, uint16_t w)
+{
   RIGHT_TIM->RIGHT_TIM_U = u;
   RIGHT_TIM->RIGHT_TIM_V = v;
   RIGHT_TIM->RIGHT_TIM_W = w;
 }
 
-void toggle_buzzer() {
+void toggle_buzzer()
+{
   HAL_GPIO_TogglePin(BUZZER_PORT, BUZZER_PIN);
 }
 
-void switch_buzzer_off() {
+void switch_buzzer_off()
+{
   HAL_GPIO_WritePin(BUZZER_PORT, BUZZER_PIN, GPIO_PIN_RESET);
 }
 
 Motor motor_left = {
-  .read_hall = read_left_motor_hall,
-  .set_disabled = set_left_motor_disabled,
-  .set_pwm = set_left_motor_pwm
-};
+    .read_hall = read_left_motor_hall,
+    .set_disabled = set_left_motor_disabled,
+    .set_pwm = set_left_motor_pwm};
 
 Motor motor_right = {
-  .read_hall = read_right_motor_hall,
-  .set_disabled = set_right_motor_disabled,
-  .set_pwm = set_right_motor_pwm
-};
+    .read_hall = read_right_motor_hall,
+    .set_disabled = set_right_motor_disabled,
+    .set_pwm = set_right_motor_pwm};
 
 Logger logger = {
-  .uart2_putchar = uart2_putchar,
-  .uart3_putchar = uart3_putchar
-};
+    .uart2_putchar = uart2_putchar,
+    .uart3_putchar = uart3_putchar};
 
 Hardware hardware = {
-  .activate_latch = activate_latch,
-  .hardware_init = hardware_init,
-  .is_button_pressed = is_button_pressed,
-  .light_led = light_led,
-  .start_adc = start_adc,
-  .is_uart3_available = is_uart3_available,
-  .uart3_transmit = uart3_transmit,
-  .unit_uart2_dma = unit_uart2_dma,
-  .unit_uart3_dma = unit_uart3_dma,
+    .activate_latch = activate_latch,
+    .hardware_init = hardware_init,
+    .is_button_pressed = is_button_pressed,
+    .light_led = light_led,
+    .start_adc = start_adc,
+    .is_uart3_available = is_uart3_available,
+    .uart3_transmit = uart3_transmit,
+    .unit_uart2_dma = unit_uart2_dma,
+    .unit_uart3_dma = unit_uart3_dma,
 
-  .init_eeprom = init_eeprom,
-  .read_configuration = read_configuration,
-  .read_configuration_value = read_configuration_value,
+    .init_eeprom = init_eeprom,
+    .read_configuration = read_configuration,
+    .read_configuration_value = read_configuration_value,
 
-  .reset = reset
-};
+    .reset = reset};
 
-void init_eeprom(void) {
+void init_eeprom(void)
+{
   HAL_FLASH_Unlock();
   EE_Init();
   HAL_FLASH_Lock();
 }
 
-void read_configuration_value(uint16_t address, uint16_t* value) {
+void read_configuration_value(uint16_t address, uint16_t *value)
+{
   HAL_FLASH_Unlock();
   EE_ReadVariable(address, value);
   HAL_FLASH_Lock();
 }
 
-void read_configuration(uint16_t* configuration) {
+void read_configuration(uint16_t *configuration)
+{
   HAL_FLASH_Unlock();
 
   for (uint8_t i = 0; i < NB_OF_VAR; i++)
-    {
-      EE_ReadVariable(VirtAddVarTab[i], &configuration[i]);
-    }
+  {
+    EE_ReadVariable(VirtAddVarTab[i], &configuration[i]);
+  }
 
-    HAL_FLASH_Lock();
+  HAL_FLASH_Lock();
 }
 
-int is_uart3_available(void) {
+int is_uart3_available(void)
+{
   return __HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0;
 }
 
-void uart3_transmit(uint8_t * data, int size) {
-    HAL_UART_Transmit_DMA(&huart3, data, size);
+void uart3_transmit(uint8_t *data, int size)
+{
+  HAL_UART_Transmit_DMA(&huart3, data, size);
 }
 
-void hardware_init(void) {
+void hardware_init(void)
+{
   HAL_Init();
 
   __HAL_RCC_AFIO_CLK_ENABLE();
@@ -243,24 +257,29 @@ void hardware_init(void) {
   MX_ADC2_Init();
 }
 
-void activate_latch() {
+void activate_latch()
+{
   HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_SET); // Activate Latch
 }
 
-int is_button_pressed() {
+int is_button_pressed()
+{
   return HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN);
 }
 
-void light_led() {
+void light_led()
+{
   HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
 }
 
-void start_adc() {
+void start_adc()
+{
   HAL_ADC_Start(&hadc1);
   HAL_ADC_Start(&hadc2);
 }
 
-void reset() {
+void reset()
+{
   HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_RESET);
 }
 

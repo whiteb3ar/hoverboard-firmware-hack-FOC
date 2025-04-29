@@ -201,10 +201,9 @@ void DMA1_Channel1_IRQHandler(void)
 
   /* Apply commands */
   motor_left.set_pwm(
-    (uint16_t)CLAMP(ul + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
-    (uint16_t)CLAMP(vl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
-    (uint16_t)CLAMP(wl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin)
-  );
+      (uint16_t)CLAMP(ul + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
+      (uint16_t)CLAMP(vl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
+      (uint16_t)CLAMP(wl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin));
   // =================================================================
 
   // ========================= RIGHT MOTOR ===========================
@@ -239,10 +238,9 @@ void DMA1_Channel1_IRQHandler(void)
 
   /* Apply commands */
   motor_right.set_pwm(
-    (uint16_t)CLAMP(ur + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
-    (uint16_t)CLAMP(vr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
-    (uint16_t)CLAMP(wr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin)
-  );
+      (uint16_t)CLAMP(ur + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
+      (uint16_t)CLAMP(vr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
+      (uint16_t)CLAMP(wr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin));
   // =================================================================
 
   /* Indicate task complete */
