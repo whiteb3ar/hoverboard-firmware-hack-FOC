@@ -22,38 +22,28 @@
 
 #include <stdio.h>
 #include <stdlib.h> // for abs()
-#include "stm32f1xx_hal.h"
+
 #include "defines.h"
-#include "setup.h"
 #include "config.h"
-#include "util.h"
+#include "app.h"
 #include "BLDC_controller.h" /* BLDC's header file */
 #include "rtwtypes.h"
 #include "comms.h"
 #include "buzzer.h"
 #include "platform.h"
 
+//#include "stm32f1xx_hal.h"
+
 #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
 #include "hd44780.h"
 #endif
 
-void SystemClock_Config(void);
-
-//------------------------------------------------------------------------
-// Global variables set externally
-//------------------------------------------------------------------------
-extern TIM_HandleTypeDef htim_left;
-extern TIM_HandleTypeDef htim_right;
-extern ADC_HandleTypeDef hadc1;
-extern ADC_HandleTypeDef hadc2;
 extern volatile adc_buf_t adc_buffer;
+
 #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
 extern LCD_PCF8574_HandleTypeDef lcd;
 extern uint8_t LCDerrorFlag;
 #endif
-
-extern UART_HandleTypeDef huart2;
-extern UART_HandleTypeDef huart3;
 
 volatile uint8_t uart_buf[200];
 
@@ -74,8 +64,10 @@ extern InputStruct input2[]; // input structure
 
 extern int16_t speedAvg;                // Average measured speed
 extern int16_t speedAvgAbs;             // Average measured speed in absolute
+
 extern volatile uint32_t timeoutCntGen; // Timeout counter for the General timeout (PPM, PWM, Nunchuk)
 extern volatile uint8_t timeoutFlgGen;  // Timeout Flag for the General timeout (PPM, PWM, Nunchuk)
+
 extern uint8_t timeoutFlgADC;           // Timeout Flag for for ADC Protection: 0 = OK, 1 = Problem detected (line disconnected or wrong ADC data)
 extern uint8_t timeoutFlgSerial;        // Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
 
@@ -83,7 +75,6 @@ extern volatile int pwml; // global variable for pwm left. -1000 to 1000
 extern volatile int pwmr; // global variable for pwm right. -1000 to 1000
 
 extern uint8_t enable; // global variable for motor enable
-
 extern int16_t batVoltage; // global variable for battery voltage
 
 #if defined(SIDEBOARD_SERIAL_USART2)
@@ -104,8 +95,6 @@ extern volatile uint16_t pwm_captured_ch2_value;
 // Global variables set here in main.c
 //------------------------------------------------------------------------
 uint8_t backwardDrive;
-
-Buzzer buzzer;
 
 extern volatile uint32_t bldc_timer;
 static uint32_t bldc_timer_prev = 0;
@@ -176,48 +165,29 @@ static uint8_t drive_mode;
 static uint16_t max_speed;
 #endif
 
+
+
+Buzzer buzzer;
+extern Hardware hardware;
+
 int main(void)
 {
+          
+  hardware.hardware_init();
 
-  HAL_Init();
-  __HAL_RCC_AFIO_CLK_ENABLE();
-  HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
-  /* System interrupt init*/
-  /* MemoryManagement_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(MemoryManagement_IRQn, 0, 0);
-  /* BusFault_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(BusFault_IRQn, 0, 0);
-  /* UsageFault_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(UsageFault_IRQn, 0, 0);
-  /* SVCall_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SVCall_IRQn, 0, 0);
-  /* DebugMonitor_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DebugMonitor_IRQn, 0, 0);
-  /* PendSV_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(PendSV_IRQn, 0, 0);
-  /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+  BLDC_Init();
 
-  SystemClock_Config();
+  hardware.activate_latch();
 
-  __HAL_RCC_DMA1_CLK_DISABLE();
-  MX_GPIO_Init();
-  MX_TIM_Init();
-  MX_ADC1_Init();
-  MX_ADC2_Init();
-  BLDC_Init(); // BLDC Controller Init
+  Input_Lim_Init();
+  Input_Init();
 
-  HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_SET); // Activate Latch
-  Input_Lim_Init();                                   // Input Limitations Init
-  Input_Init();                                       // Input Init
-
-  HAL_ADC_Start(&hadc1);
-  HAL_ADC_Start(&hadc2);
+  hardware.start_adc();
 
   buzzer_init(&buzzer);
-
   poweronMelody(&buzzer);
-  HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
+
+  hardware.light_led();
 
   int32_t board_temp_adcFixdt = adc_buffer.temp << 16; // Fixed-point filter output initialized with current ADC converted to fixed-point
   int16_t board_temp_adcFilt = adc_buffer.temp;
@@ -252,7 +222,7 @@ int main(void)
 #endif
 
   // Loop until button is released
-  while (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+  while (hardware.is_button_pressed())
   {
     delay(10);
   }
@@ -281,7 +251,9 @@ int main(void)
       {
         beepShort(&buzzer, 6); // make 2 beeps indicating the motor enable
         beepShort(&buzzer, 4);
+
         delay(100);
+
         steerFixdt = speedFixdt = 0; // reset filters
         enable = 1;                  // enable motors
 #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
@@ -594,12 +566,12 @@ int main(void)
       }
 #endif
 #if defined(FEEDBACK_SERIAL_USART3)
-      if (__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0)
+      if (hardware.is_uart3_available())
       {
         Feedback.cmdLed = (uint16_t)sideboard_leds_R;
         Feedback.checksum = (uint16_t)(Feedback.start ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed);
 
-        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
+        hardware.uart3_transmit((uint8_t *)&Feedback, sizeof(Feedback));
       }
 #endif
     }
@@ -694,50 +666,4 @@ int main(void)
     main_loop_counter++;
   }
 }
-}
-
-// ===========================================================
-/** System Clock Configuration
- */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct;
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-  RCC_PeriphCLKInitTypeDef PeriphClkInit;
-
-  /**Initializes the CPU, AHB and APB busses clocks
-   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = 16;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
-  HAL_RCC_OscConfig(&RCC_OscInitStruct);
-
-  /**Initializes the CPU, AHB and APB busses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2);
-
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  // PeriphClkInit.AdcClockSelection    = RCC_ADCPCLK2_DIV8;  // 8 MHz
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV4; // 16 MHz
-  HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
-
-  /**Configure the Systick interrupt time
-   */
-  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / 1000);
-
-  /**Configure the Systick
-   */
-  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
-  /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }

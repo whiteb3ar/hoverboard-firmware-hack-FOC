@@ -23,8 +23,8 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#include <stdint.h>
 #include "config.h"
-#include "platform.h"
 
 #define DELAY_TIM_FREQUENCY_US 1000000
 
@@ -55,7 +55,6 @@
 #if defined(PRINTF_FLOAT_SUPPORT) && (defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)) && defined(__GNUC__)
     asm(".global _printf_float");     // this is the magic trick for printf to support float. Warning: It will increase code considerably! Better to avoid!
 #endif
-
 
 typedef struct {
   uint16_t dcr; 

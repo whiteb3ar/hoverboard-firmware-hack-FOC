@@ -23,7 +23,6 @@
 
 #include <stdint.h>
 
-
 // Rx Structures USART
 #if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
   #ifdef CONTROL_IBUS
@@ -71,7 +70,6 @@ typedef struct {
 void BLDC_Init(void);
 void Input_Lim_Init(void);
 void Input_Init(void);
-void UART_DisableRxErrors(UART_HandleTypeDef *huart);
 
 // General Functions
 void calcAvgSpeed(void);
@@ -87,8 +85,10 @@ void calcInputCmd(InputStruct *in, int16_t out_min, int16_t out_max);
 void readInputRaw(void);
 void handleTimeout(void);
 void readCommand(void);
-void usart2_rx_check(void);
-void usart3_rx_check(void);
+
+void usart2_rx_check(int current_buffer_position);
+void usart3_rx_check(int current_buffer_position);
+
 #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
 void usart_process_debug(uint8_t *userCommand, uint32_t len);
 #endif
@@ -122,5 +122,37 @@ typedef struct {
 } MultipleTap;
 void multipleTapDet(int16_t u, uint32_t timeNow, MultipleTap *x);
 
-#endif
+/* Variables' number */
+#define NB_OF_VAR             ((uint8_t)0x13)       /* 19 Variables */
 
+typedef struct {
+  void (*hardware_init)(void);
+  void (*activate_latch)(void);
+  void (*start_adc)(void);
+  void (*light_led)(void);
+  int (*is_button_pressed)(void);
+  int (*is_uart3_available)(void);
+
+  void (*uart2_init)(void);
+  void (*uart3_init)(void);
+
+  void (*uart3_transmit)(uint8_t * data, int size);
+
+  void (*unit_uart2_dma)(uint8_t* buffer, int size);
+  void (*unit_uart3_dma)(uint8_t* buffer, int size);
+
+  void (*init_eeprom)(void);
+  void (*read_configuration)(uint16_t* buffer);
+  void (*read_configuration_value)(uint16_t address, uint16_t* value);
+
+  void (*reset)(void);
+} Hardware;
+
+typedef struct {
+  void (*uart2_putchar)(char*);
+  void (*uart3_putchar)(char*);
+} Logger;
+
+extern uint16_t VirtAddVarTab[NB_OF_VAR];
+
+#endif

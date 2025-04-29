@@ -26,7 +26,7 @@
 #include "defines.h"
 #include "setup.h"
 #include "config.h"
-#include "util.h"
+#include "app.h"
 #include "buzzer.h"
 
 // Matlab includes and defines - from auto-code generation

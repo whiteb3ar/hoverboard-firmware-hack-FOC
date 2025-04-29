@@ -21,12 +21,11 @@
 #include <stdio.h>
 #include <stdlib.h> // for abs()
 #include <string.h>
-#include "stm32f1xx_hal.h"
+
 #include "defines.h"
-#include "setup.h"
 #include "config.h"
 #include "eeprom.h"
-#include "util.h"
+#include "app.h"
 #include "BLDC_controller.h"
 #include "rtwtypes.h"
 #include "comms.h"
@@ -43,9 +42,9 @@
 // Global variables set externally
 //------------------------------------------------------------------------
 extern volatile adc_buf_t adc_buffer;
-extern I2C_HandleTypeDef hi2c2;
-extern UART_HandleTypeDef huart2;
-extern UART_HandleTypeDef huart3;
+
+extern Logger logger;
+extern Hardware hardware;
 
 extern int16_t batVoltage;
 extern uint8_t backwardDrive;
@@ -209,9 +208,9 @@ static uint8_t standstillAcv = 0;
 PUTCHAR_PROTOTYPE
 {
 #if defined(DEBUG_SERIAL_USART2)
-  HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, 1000);
+  logger.uart2_putchar((char*)&ch);
 #elif defined(DEBUG_SERIAL_USART3)
-  HAL_UART_Transmit(&huart3, (uint8_t *)&ch, 1, 1000);
+  logger.uart3_putchar((char*)&ch);
 #endif
   return ch;
 }
@@ -291,53 +290,42 @@ void Input_Init(void)
 #endif
 
 #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
-  UART2_Init();
+  hardware.uart2_init();
 #endif
 #if defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
-  UART3_Init();
+  hardware.uart3_init();
 #endif
 #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
-  HAL_UART_Receive_DMA(&huart2, (uint8_t *)rx_buffer_L, sizeof(rx_buffer_L));
-  UART_DisableRxErrors(&huart2);
+  hardware.unit_uart2_dma(rx_buffer_L, sizeof(rx_buffer_L));
 #endif
 #if defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
-  HAL_UART_Receive_DMA(&huart3, (uint8_t *)rx_buffer_R, sizeof(rx_buffer_R));
-  UART_DisableRxErrors(&huart3);
+  hardware.unit_uart3_dma(rx_buffer_R, sizeof(rx_buffer_R));
 #endif
 
 #if !defined(VARIANT_HOVERBOARD) && !defined(VARIANT_TRANSPOTTER)
-  uint16_t writeCheck, readVal;
-  HAL_FLASH_Unlock();
-  EE_Init(); /* EEPROM Init */
-  EE_ReadVariable(VirtAddVarTab[0], &writeCheck);
-  if (writeCheck == FLASH_WRITE_KEY)
+  uint16_t configuration[NB_OF_VAR];
+
+  hardware.init_eeprom();
+  hardware.read_configuration(configuration);
+
+  if (configuration[0] == FLASH_WRITE_KEY)
   {
 #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
     printf("Using the configuration from EEprom\r\n");
 #endif
+    rtP_Left.i_max = rtP_Right.i_max = (int16_t)configuration[1];
+    rtP_Left.n_max = rtP_Right.n_max = (int16_t)configuration[2];
 
-    EE_ReadVariable(VirtAddVarTab[1], &readVal);
-    rtP_Left.i_max = rtP_Right.i_max = (int16_t)readVal;
-    EE_ReadVariable(VirtAddVarTab[2], &readVal);
-    rtP_Left.n_max = rtP_Right.n_max = (int16_t)readVal;
     for (uint8_t i = 0; i < INPUTS_NR; i++)
     {
-      EE_ReadVariable(VirtAddVarTab[3 + 8 * i], &readVal);
-      input1[i].typ = (uint8_t)readVal;
-      EE_ReadVariable(VirtAddVarTab[4 + 8 * i], &readVal);
-      input1[i].min = (int16_t)readVal;
-      EE_ReadVariable(VirtAddVarTab[5 + 8 * i], &readVal);
-      input1[i].mid = (int16_t)readVal;
-      EE_ReadVariable(VirtAddVarTab[6 + 8 * i], &readVal);
-      input1[i].max = (int16_t)readVal;
-      EE_ReadVariable(VirtAddVarTab[7 + 8 * i], &readVal);
-      input2[i].typ = (uint8_t)readVal;
-      EE_ReadVariable(VirtAddVarTab[8 + 8 * i], &readVal);
-      input2[i].min = (int16_t)readVal;
-      EE_ReadVariable(VirtAddVarTab[9 + 8 * i], &readVal);
-      input2[i].mid = (int16_t)readVal;
-      EE_ReadVariable(VirtAddVarTab[10 + 8 * i], &readVal);
-      input2[i].max = (int16_t)readVal;
+      input1[i].typ = (uint8_t)configuration[3 + 8 * i];
+      input1[i].min = (int16_t)configuration[4 + 8 * i];
+      input1[i].mid = (int16_t)configuration[5 + 8 * i];
+      input1[i].max = (int16_t)configuration[6 + 8 * i];
+      input2[i].typ = (uint8_t)configuration[7 + 8 * i];
+      input2[i].min = (int16_t)configuration[8 + 8 * i];
+      input2[i].mid = (int16_t)configuration[9 + 8 * i];
+      input2[i].max = (int16_t)configuration[10 + 8 * i];
 
       printf("Limits Input1: TYP:%i MIN:%i MID:%i MAX:%i\r\nLimits Input2: TYP:%i MIN:%i MID:%i MAX:%i\r\n",
              input1[i].typ, input1[i].min, input1[i].mid, input1[i].max,
@@ -373,16 +361,13 @@ void Input_Init(void)
              input2[i].typ, input2[i].min, input2[i].mid, input2[i].max);
     }
   }
-  HAL_FLASH_Lock();
 #endif
 
 #ifdef VARIANT_TRANSPOTTER
   enable = 1;
-
-  HAL_FLASH_Unlock();
-  EE_Init(); /* EEPROM Init */
-  EE_ReadVariable(VirtAddVarTab[0], &saveValue);
-  HAL_FLASH_Lock();
+  
+  hardware.init_eeprom();
+  hardware.read_configuration_value(VirtAddVarTab[0], &saveValue);
 
   setDistance = saveValue / 1000.0;
   if (setDistance < 0.2)
@@ -435,21 +420,6 @@ void Input_Init(void)
   LCD_WriteString(&lcd, "m)");
 #endif
 }
-
-/**
- * @brief  Disable Rx Errors detection interrupts on UART peripheral (since we do not want DMA to be stopped)
- *         The incorrect data will be filtered based on the START_FRAME and checksum.
- * @param  huart: UART handle.
- * @retval None
- */
-#if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || \
-    defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
-void UART_DisableRxErrors(UART_HandleTypeDef *huart)
-{
-  CLEAR_BIT(huart->Instance->CR1, USART_CR1_PEIE); /* Disable PE (Parity Error) interrupts */
-  CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);  /* Disable EIE (Frame error, noise error, overrun error) interrupts */
-}
-#endif
 
 /* =========================== General Functions =========================== */
 
@@ -531,7 +501,7 @@ void adcCalibLim(void)
 #endif
 
   // Extract MIN, MAX and MID from ADC while the power button is not pressed
-  while (!HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) && input_cal_timeout++ < 4000)
+  while (!hardware.is_button_pressed() && input_cal_timeout++ < 4000)
   { // 20 sec timeout
     readInputRaw();
     filtLowPass32(input1[inIdx].raw, FILTER, &input1_fixdt);
@@ -641,7 +611,7 @@ void updateCurSpdLim(void)
   cur_spd_valid = 0;
 
   // Wait for the power button press
-  while (!HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) && cur_spd_timeout++ < 2000)
+  while (!hardware.is_button_pressed() && cur_spd_timeout++ < 2000)
   { // 10 sec timeout
     readInputRaw();
     filtLowPass32(input1[inIdx].raw, FILTER, &input1_fixdt);
@@ -1180,12 +1150,12 @@ void readCommand(void)
  * Check for new data received on USART2 with DMA: refactored function from https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
  * - this function is called for every USART IDLE line detection, in the USART interrupt handler
  */
-void usart2_rx_check(void)
+void usart2_rx_check(int current_buffer_position)
 {
 #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
   static uint32_t old_pos;
   uint32_t pos;
-  pos = rx_buffer_L_len - __HAL_DMA_GET_COUNTER(huart2.hdmarx); // Calculate current position in buffer
+  pos = rx_buffer_L_len - current_buffer_position;
 #endif
 
 #if defined(DEBUG_SERIAL_USART2)
@@ -1267,12 +1237,12 @@ void usart2_rx_check(void)
  * Check for new data received on USART3 with DMA: refactored function from https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
  * - this function is called for every USART IDLE line detection, in the USART interrupt handler
  */
-void usart3_rx_check(void)
+void usart3_rx_check(int current_buffer_position)
 {
 #if defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
   static uint32_t old_pos;
   uint32_t pos;
-  pos = rx_buffer_R_len - __HAL_DMA_GET_COUNTER(huart3.hdmarx); // Calculate current position in buffer
+  pos = rx_buffer_R_len - current_buffer_position; // Calculate current position in buffer
 #endif
 
 #if defined(DEBUG_SERIAL_USART3)
@@ -1743,8 +1713,10 @@ void poweroff(void)
 
     delay(100);
   }
+  
   saveConfig();
-  HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_RESET);
+  hardware.reset();
+
   while (1)
   {
   }
@@ -1753,10 +1725,10 @@ void poweroff(void)
 void poweroffPressCheck(void)
 {
 #if !defined(VARIANT_HOVERBOARD) && !defined(VARIANT_TRANSPOTTER)
-  if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+  if (hardware.is_button_pressed())
   {
     uint16_t cnt_press = 0;
-    while (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+    while (hardware.is_button_pressed())
     {
       delay(10);
       if (cnt_press++ == 5 * 100)
@@ -1771,9 +1743,9 @@ void poweroffPressCheck(void)
     if (cnt_press >= 5 * 100)
     { // Check if press is more than 5 sec
       delay(1000);
-      if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+      if (hardware.is_button_pressed())
       { // Double press: Adjust Max Current, Max Speed
-        while (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+        while (hardware.is_button_pressed())
         {
           delay(10);
         }
@@ -1799,18 +1771,18 @@ void poweroffPressCheck(void)
     }
   }
 #elif defined(VARIANT_TRANSPOTTER)
-  if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+  if (hardware.is_button_pressed())
   {
     enable = 0;
-    while (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+    while (hardware.is_button_pressed())
     {
       delay(10);
     }
     beepShort(&buzzer, 5);
     delay(300);
-    if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+    if (hardware.is_button_pressed())
     {
-      while (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+      while (hardware.is_button_pressed())
       {
         delay(10);
       }
@@ -1831,10 +1803,10 @@ void poweroffPressCheck(void)
     }
   }
 #else
-  if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+  if (hardware.is_button_pressed())
   {
     enable = 0; // disable motors
-    while (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN))
+    while (hardware.is_button_pressed())
     {
     }           // wait until button is released
     poweroff(); // release power-latch

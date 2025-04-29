@@ -38,6 +38,10 @@ pb10 usart3 dma1 channel2/3
 #include "defines.h"
 #include "config.h"
 #include "setup.h"
+#include "app.h"
+
+#include "stm32f1xx_hal.h"
+#include "eeprom.h"
 
 TIM_HandleTypeDef htim_right;
 TIM_HandleTypeDef htim_left;
@@ -51,7 +55,148 @@ DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 DMA_HandleTypeDef hdma_usart3_rx;
 DMA_HandleTypeDef hdma_usart3_tx;
+
 volatile adc_buf_t adc_buffer;
+
+void SystemClock_Config(void);
+void UART_DisableRxErrors(UART_HandleTypeDef *huart);
+
+void hardware_init(void);
+void activate_latch();
+void light_led();
+void start_adc();
+int is_button_pressed();
+int is_uart3_available(void);
+void uart3_transmit(uint8_t * data, int size);
+void reset(void);
+
+void init_eeprom(void);
+void read_configuration(uint16_t* buffer);
+void read_configuration_value(uint16_t address, uint16_t* value);
+
+void uart2_putchar(char* data) {
+  HAL_UART_Transmit(&huart2, (uint8_t *)data, 1, 1000);
+}
+
+void uart3_putchar(char* data) {
+  HAL_UART_Transmit(&huart3, (uint8_t *)data, 1, 1000);
+}
+
+void unit_uart2_dma(uint8_t* buffer, int size) {
+  HAL_UART_Receive_DMA(&huart2, buffer, size);
+  UART_DisableRxErrors(&huart2);
+}
+
+void unit_uart3_dma(uint8_t* buffer, int size) {
+  HAL_UART_Receive_DMA(&huart2, buffer, size);
+  UART_DisableRxErrors(&huart3);
+}
+
+Logger logger = {
+  .uart2_putchar = uart2_putchar,
+  .uart3_putchar = uart3_putchar
+};
+
+Hardware hardware = {
+  .activate_latch = activate_latch,
+  .hardware_init = hardware_init,
+  .is_button_pressed = is_button_pressed,
+  .light_led = light_led,
+  .start_adc = start_adc,
+  .is_uart3_available = is_uart3_available,
+  .uart3_transmit = uart3_transmit,
+  .unit_uart2_dma = unit_uart2_dma,
+  .unit_uart3_dma = unit_uart3_dma,
+
+  .init_eeprom = init_eeprom,
+  .read_configuration = read_configuration,
+  .read_configuration_value = read_configuration_value,
+
+  .reset = reset
+};
+
+void init_eeprom(void) {
+  HAL_FLASH_Unlock();
+  EE_Init();
+  HAL_FLASH_Lock();
+}
+
+void read_configuration_value(uint16_t address, uint16_t* value) {
+  HAL_FLASH_Unlock();
+  EE_ReadVariable(address, value);
+  HAL_FLASH_Lock();
+}
+
+void read_configuration(uint16_t* configuration) {
+  HAL_FLASH_Unlock();
+
+  for (uint8_t i = 0; i < NB_OF_VAR; i++)
+    {
+      EE_ReadVariable(VirtAddVarTab[i], &configuration[i]);
+    }
+
+    HAL_FLASH_Lock();
+}
+
+int is_uart3_available(void) {
+  return __HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0;
+}
+
+void uart3_transmit(uint8_t * data, int size) {
+    HAL_UART_Transmit_DMA(&huart3, data, size);
+}
+
+void hardware_init(void) {
+  HAL_Init();
+
+  __HAL_RCC_AFIO_CLK_ENABLE();
+  HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
+  /* System interrupt init*/
+  /* MemoryManagement_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(MemoryManagement_IRQn, 0, 0);
+  /* BusFault_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(BusFault_IRQn, 0, 0);
+  /* UsageFault_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(UsageFault_IRQn, 0, 0);
+  /* SVCall_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(SVCall_IRQn, 0, 0);
+  /* DebugMonitor_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DebugMonitor_IRQn, 0, 0);
+  /* PendSV_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(PendSV_IRQn, 0, 0);
+  /* SysTick_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+
+  SystemClock_Config();
+
+  __HAL_RCC_DMA1_CLK_DISABLE();
+
+  MX_GPIO_Init();
+  MX_TIM_Init();
+  MX_ADC1_Init();
+  MX_ADC2_Init();
+}
+
+void activate_latch() {
+  HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_SET); // Activate Latch
+}
+
+int is_button_pressed() {
+  return HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN);
+}
+
+void light_led() {
+  HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
+}
+
+void start_adc() {
+  HAL_ADC_Start(&hadc1);
+  HAL_ADC_Start(&hadc2);
+}
+
+void reset() {
+  HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_RESET);
+}
 
 #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
 /* USART2 init function */
@@ -707,3 +852,64 @@ void MX_ADC2_Init(void)
   hadc2.Instance->CR2 |= ADC_CR2_DMA;
   __HAL_ADC_ENABLE(&hadc2);
 }
+
+// ===========================================================
+/** System Clock Configuration
+ */
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInit;
+
+  /**Initializes the CPU, AHB and APB busses clocks
+   */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = 16;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
+  HAL_RCC_OscConfig(&RCC_OscInitStruct);
+
+  /**Initializes the CPU, AHB and APB busses clocks
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2);
+
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  // PeriphClkInit.AdcClockSelection    = RCC_ADCPCLK2_DIV8;  // 8 MHz
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV4; // 16 MHz
+  HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
+
+  /**Configure the Systick interrupt time
+   */
+  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / 1000);
+
+  /**Configure the Systick
+   */
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+
+  /* SysTick_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+}
+
+/**
+ * @brief  Disable Rx Errors detection interrupts on UART peripheral (since we do not want DMA to be stopped)
+ *         The incorrect data will be filtered based on the START_FRAME and checksum.
+ * @param  huart: UART handle.
+ * @retval None
+ */
+#if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || \
+    defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
+void UART_DisableRxErrors(UART_HandleTypeDef *huart)
+{
+  CLEAR_BIT(huart->Instance->CR1, USART_CR1_PEIE); /* Disable PE (Parity Error) interrupts */
+  CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);  /* Disable EIE (Frame error, noise error, overrun error) interrupts */
+}
+#endif

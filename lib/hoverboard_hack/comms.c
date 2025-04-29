@@ -25,7 +25,7 @@
 #include "defines.h"
 #include "eeprom.h"
 #include "BLDC_controller.h"
-#include "util.h"
+#include "app.h"
 #include "comms.h"
 #include "buzzer.h"
 

@@ -35,8 +35,8 @@
 #include "stm32f1xx.h"
 #include "stm32f1xx_it.h"
 #include "defines.h"
+#include "app.h"
 #include "config.h"
-#include "util.h"
 
 extern DMA_HandleTypeDef hdma_i2c2_rx;
 extern DMA_HandleTypeDef hdma_i2c2_tx;
@@ -346,7 +346,7 @@ void USART2_IRQHandler(void)
   /* USER CODE BEGIN USART2_IRQn 1 */
   if(RESET != __HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_IDLE)) {  // Check for IDLE line interrupt
       __HAL_UART_CLEAR_IDLEFLAG(&huart2);                         // Clear IDLE line flag (otherwise it will continue to enter interrupt)
-      usart2_rx_check();                                          // Check for data to process
+      usart2_rx_check(__HAL_DMA_GET_COUNTER(huart2.hdmarx));      // Calculate current position in buffer & Check for data to process
   }
   /* USER CODE END USART2_IRQn 1 */
 }
@@ -365,7 +365,7 @@ void USART3_IRQHandler(void)
   /* USER CODE BEGIN USART2_IRQn 1 */
   if(RESET != __HAL_UART_GET_IT_SOURCE(&huart3, UART_IT_IDLE)) {  // Check for IDLE line interrupt  
       __HAL_UART_CLEAR_IDLEFLAG(&huart3);                         // Clear IDLE line flag (otherwise it will continue to enter interrupt)
-      usart3_rx_check();                                          // Check for data to process
+      usart3_rx_check(__HAL_DMA_GET_COUNTER(huart3.hdmarx));      // Calculate current position in buffer & Check for data to process
   }
   /* USER CODE END USART2_IRQn 1 */
 }
