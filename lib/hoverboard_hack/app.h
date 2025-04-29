@@ -172,4 +172,6 @@ typedef struct
 
 extern uint16_t VirtAddVarTab[NB_OF_VAR];
 
+void main_bldc_irq_loop(void);
+
 #endif

@@ -998,3 +998,15 @@ void UART_DisableRxErrors(UART_HandleTypeDef *huart)
   CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);  /* Disable EIE (Frame error, noise error, overrun error) interrupts */
 }
 #endif
+
+// =================================
+// DMA interrupt frequency =~ 16 kHz
+// =================================
+void DMA1_Channel1_IRQHandler(void)
+{
+  DMA1->IFCR = DMA_IFCR_CTCIF1;
+  // HAL_GPIO_WritePin(LED_PORT, LED_PIN, 1);
+  // HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
+
+  main_bldc_irq_loop();
+}

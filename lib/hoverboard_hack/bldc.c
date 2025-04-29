@@ -84,16 +84,8 @@ static int16_t offsetdcr = 2000;
 int16_t batVoltage = (400 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE;
 static int32_t batVoltageFixdt = (400 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE << 16; // Fixed-point filter output initialized at 400 V*100/cell = 4 V/cell converted to fixed-point
 
-// =================================
-// DMA interrupt frequency =~ 16 kHz
-// =================================
-void DMA1_Channel1_IRQHandler(void)
+void main_bldc_irq_loop()
 {
-
-  DMA1->IFCR = DMA_IFCR_CTCIF1;
-  // HAL_GPIO_WritePin(LED_PORT, LED_PIN, 1);
-  // HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
-
   if (offsetcount < 2000)
   { // calibrate ADC offsets
     offsetcount++;
@@ -172,7 +164,7 @@ void DMA1_Channel1_IRQHandler(void)
   // Get hall sensors values
 
   uint8_t left_hall[3];
-  motor_left.read_hall(&left_hall);
+  motor_left.read_hall(left_hall);
 
   /* Set motor inputs here */
   rtU_Left.b_motEna = enableFin;
@@ -209,7 +201,7 @@ void DMA1_Channel1_IRQHandler(void)
   // ========================= RIGHT MOTOR ===========================
   // Get hall sensors values
   uint8_t right_hall[3];
-  motor_right.read_hall(&right_hall);
+  motor_right.read_hall(right_hall);
 
   /* Set motor inputs here */
   rtU_Right.b_motEna = enableFin;
