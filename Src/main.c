@@ -32,7 +32,7 @@
 #include "buzzer.h"
 #include "platform.h"
 
-//#include "stm32f1xx_hal.h"
+// #include "stm32f1xx_hal.h"
 
 #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
 #include "hd44780.h"
@@ -62,19 +62,19 @@ extern uint8_t inIdx_prev;
 extern InputStruct input1[]; // input structure
 extern InputStruct input2[]; // input structure
 
-extern int16_t speedAvg;                // Average measured speed
-extern int16_t speedAvgAbs;             // Average measured speed in absolute
+extern int16_t speedAvg;    // Average measured speed
+extern int16_t speedAvgAbs; // Average measured speed in absolute
 
 extern volatile uint32_t timeoutCntGen; // Timeout counter for the General timeout (PPM, PWM, Nunchuk)
 extern volatile uint8_t timeoutFlgGen;  // Timeout Flag for the General timeout (PPM, PWM, Nunchuk)
 
-extern uint8_t timeoutFlgADC;           // Timeout Flag for for ADC Protection: 0 = OK, 1 = Problem detected (line disconnected or wrong ADC data)
-extern uint8_t timeoutFlgSerial;        // Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
+extern uint8_t timeoutFlgADC;    // Timeout Flag for for ADC Protection: 0 = OK, 1 = Problem detected (line disconnected or wrong ADC data)
+extern uint8_t timeoutFlgSerial; // Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
 
 extern volatile int pwml; // global variable for pwm left. -1000 to 1000
 extern volatile int pwmr; // global variable for pwm right. -1000 to 1000
 
-extern uint8_t enable; // global variable for motor enable
+extern uint8_t enable;     // global variable for motor enable
 extern int16_t batVoltage; // global variable for battery voltage
 
 #if defined(SIDEBOARD_SERIAL_USART2)
