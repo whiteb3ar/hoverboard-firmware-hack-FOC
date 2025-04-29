@@ -1,15 +1,12 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include "stm32f1xx_hal.h"
 #include "defines.h"
-#include "setup.h"
+//#include "setup.h"
 #include "config.h"
 
 #define NUNCHUK_I2C_ADDRESS 0xA4
 
-TIM_HandleTypeDef TimHandle;
-TIM_HandleTypeDef TimHandle2;
 uint8_t ppm_count = 0;
 uint8_t pwm_count = 0;
 uint32_t timeoutCntGen = TIMEOUT;
@@ -19,9 +16,9 @@ uint8_t nunchuk_data[6] = {0};
 uint8_t i2cBuffer[2];
 nunchuk_state nunchukState = NUNCHUK_CONNECTING;
 
-extern I2C_HandleTypeDef hi2c2;
-extern DMA_HandleTypeDef hdma_i2c2_rx;
-extern DMA_HandleTypeDef hdma_i2c2_tx;
+//TODO: refactor the code so that it does not depend on the stm23
+//TIM_HandleTypeDef TimHandle;
+//extern I2C_HandleTypeDef hi2c2;
 
 #if defined(CONTROL_PPM_LEFT) || defined(CONTROL_PPM_RIGHT)
 uint16_t ppm_captured_value[PPM_NUM_CHANNELS + 1] = {500, 500};
@@ -248,6 +245,7 @@ void PWM_Init(void)
 }
 #endif
 
+#if defined(CONTROL_NUNCHUK) || defined(SUPPORT_NUNCHUK)
 uint8_t Nunchuk_tx(uint8_t i2cBuffer[], uint8_t i2cBufferLength)
 {
   if (HAL_I2C_Master_Transmit(&hi2c2, NUNCHUK_I2C_ADDRESS, (uint8_t *)i2cBuffer, i2cBufferLength, 100) == HAL_OK)
@@ -276,7 +274,7 @@ uint8_t Nunchuk_Init(void)
   {
     return false;
   }
-  HAL_Delay(10);
+  delay(10);
 
   i2cBuffer[0] = 0xFB;
   i2cBuffer[1] = 0x00;
@@ -285,7 +283,7 @@ uint8_t Nunchuk_Init(void)
   {
     return false;
   }
-  HAL_Delay(10);
+  delay(10);
 
   return true;
 }
@@ -343,7 +341,7 @@ nunchuk_state Nunchuk_Read(void)
     {
       success = false;
     }
-    HAL_Delay(3);
+    delay(3);
 
     /* Clear the receive data buffer */
     for (i = 0; i < 6; i++)
@@ -356,7 +354,7 @@ nunchuk_state Nunchuk_Read(void)
     {
       success = false;
     }
-    HAL_Delay(3);
+    delay(3);
 
     /* Checksum the receive buffer to ensure it is not in an error condition, i.e. all 0x00 or 0xFF */
     for (i = 0; i < 6; i++)
@@ -397,3 +395,4 @@ nunchuk_state Nunchuk_Read(void)
   // setScopeChannel(2, (int)nunchuk_data[5] & 1);
   // setScopeChannel(3, ((int)nunchuk_data[5] >> 1) & 1);
 }
+#endif

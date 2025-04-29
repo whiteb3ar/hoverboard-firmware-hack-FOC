@@ -144,9 +144,18 @@ typedef struct {
   void (*init_eeprom)(void);
   void (*read_configuration)(uint16_t* buffer);
   void (*read_configuration_value)(uint16_t address, uint16_t* value);
+  
+  void (*toggle_buzzer)(void);
+  void (*switch_buzzer_off)(void);
 
   void (*reset)(void);
 } Hardware;
+
+typedef struct {
+  void (*set_disabled)(uint8_t disabled);
+  void (*read_hall)(uint8_t* values);
+  void (*set_pwm)(uint16_t u, uint16_t v, uint16_t w);
+} Motor;
 
 typedef struct {
   void (*uart2_putchar)(char*);

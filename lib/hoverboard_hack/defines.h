@@ -78,7 +78,11 @@ typedef enum {
 
 // Define I2C, Nunchuk, PPM, PWM functions
 void I2C_Init(void);
+
+#if defined(CONTROL_NUNCHUK) || defined(SUPPORT_NUNCHUK)
 nunchuk_state Nunchuk_Read(void);
+#endif
+
 void PPM_Init(void);
 void PPM_ISR_Callback(void);
 void PWM_Init(void);

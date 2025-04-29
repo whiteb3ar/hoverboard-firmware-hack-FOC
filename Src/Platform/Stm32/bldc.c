@@ -59,7 +59,12 @@ volatile int pwmr = 0;
 
 extern volatile adc_buf_t adc_buffer;
 
+extern Hardware hardware;
+
 extern Buzzer buzzer;
+
+extern Motor motor_left;
+extern Motor motor_right;
 
 volatile uint32_t bldc_timer = 0;
 
@@ -119,23 +124,8 @@ void DMA1_Channel1_IRQHandler(void)
 
   // Disable PWM when current limit is reached (current chopping)
   // This is the Level 2 of current protection. The Level 1 should kick in first given by I_MOT_MAX
-  if (ABS(curL_DC) > curDC_max || enable == 0)
-  {
-    LEFT_TIM->BDTR &= ~TIM_BDTR_MOE;
-  }
-  else
-  {
-    LEFT_TIM->BDTR |= TIM_BDTR_MOE;
-  }
-
-  if (ABS(curR_DC) > curDC_max || enable == 0)
-  {
-    RIGHT_TIM->BDTR &= ~TIM_BDTR_MOE;
-  }
-  else
-  {
-    RIGHT_TIM->BDTR |= TIM_BDTR_MOE;
-  }
+  motor_left.set_disabled(ABS(curL_DC) > curDC_max || enable == 0);
+  motor_right.set_disabled(ABS(curR_DC) > curDC_max || enable == 0);
 
   // Create square wave for buzzer
   bldc_timer++;
@@ -144,11 +134,11 @@ void DMA1_Channel1_IRQHandler(void)
 
   if (buzzerState == BUZZER_TOGGLE)
   {
-    HAL_GPIO_TogglePin(BUZZER_PORT, BUZZER_PIN);
+    hardware.toggle_buzzer();
   }
   else if (buzzerState == BUZZER_OFF)
   {
-    HAL_GPIO_WritePin(BUZZER_PORT, BUZZER_PIN, GPIO_PIN_RESET);
+    hardware.switch_buzzer_off();
   }
 
   // Adjust pwm_margin depending on the selected Control Type
@@ -180,17 +170,17 @@ void DMA1_Channel1_IRQHandler(void)
 
   // ========================= LEFT MOTOR ============================
   // Get hall sensors values
-  uint8_t hall_ul = !(LEFT_HALL_U_PORT->IDR & LEFT_HALL_U_PIN);
-  uint8_t hall_vl = !(LEFT_HALL_V_PORT->IDR & LEFT_HALL_V_PIN);
-  uint8_t hall_wl = !(LEFT_HALL_W_PORT->IDR & LEFT_HALL_W_PIN);
+
+  uint8_t left_hall[3];
+  motor_left.read_hall(&left_hall);
 
   /* Set motor inputs here */
   rtU_Left.b_motEna = enableFin;
   rtU_Left.z_ctrlModReq = ctrlModReq;
   rtU_Left.r_inpTgt = pwml;
-  rtU_Left.b_hallA = hall_ul;
-  rtU_Left.b_hallB = hall_vl;
-  rtU_Left.b_hallC = hall_wl;
+  rtU_Left.b_hallA = left_hall[0];
+  rtU_Left.b_hallB = left_hall[1];
+  rtU_Left.b_hallC = left_hall[2];
   rtU_Left.i_phaAB = curL_phaA;
   rtU_Left.i_phaBC = curL_phaB;
   rtU_Left.i_DCLink = curL_DC;
@@ -210,24 +200,25 @@ void DMA1_Channel1_IRQHandler(void)
   // motAngleLeft = rtY_Left.a_elecAngle;
 
   /* Apply commands */
-  LEFT_TIM->LEFT_TIM_U = (uint16_t)CLAMP(ul + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
-  LEFT_TIM->LEFT_TIM_V = (uint16_t)CLAMP(vl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
-  LEFT_TIM->LEFT_TIM_W = (uint16_t)CLAMP(wl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
+  motor_left.set_pwm(
+    (uint16_t)CLAMP(ul + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
+    (uint16_t)CLAMP(vl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
+    (uint16_t)CLAMP(wl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin)
+  );
   // =================================================================
 
   // ========================= RIGHT MOTOR ===========================
   // Get hall sensors values
-  uint8_t hall_ur = !(RIGHT_HALL_U_PORT->IDR & RIGHT_HALL_U_PIN);
-  uint8_t hall_vr = !(RIGHT_HALL_V_PORT->IDR & RIGHT_HALL_V_PIN);
-  uint8_t hall_wr = !(RIGHT_HALL_W_PORT->IDR & RIGHT_HALL_W_PIN);
+  uint8_t right_hall[3];
+  motor_right.read_hall(&right_hall);
 
   /* Set motor inputs here */
   rtU_Right.b_motEna = enableFin;
   rtU_Right.z_ctrlModReq = ctrlModReq;
   rtU_Right.r_inpTgt = pwmr;
-  rtU_Right.b_hallA = hall_ur;
-  rtU_Right.b_hallB = hall_vr;
-  rtU_Right.b_hallC = hall_wr;
+  rtU_Right.b_hallA = right_hall[0];
+  rtU_Right.b_hallB = right_hall[1];
+  rtU_Right.b_hallC = right_hall[2];
   rtU_Right.i_phaAB = curR_phaB;
   rtU_Right.i_phaBC = curR_phaC;
   rtU_Right.i_DCLink = curR_DC;
@@ -247,9 +238,11 @@ void DMA1_Channel1_IRQHandler(void)
   // motAngleRight = rtY_Right.a_elecAngle;
 
   /* Apply commands */
-  RIGHT_TIM->RIGHT_TIM_U = (uint16_t)CLAMP(ur + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
-  RIGHT_TIM->RIGHT_TIM_V = (uint16_t)CLAMP(vr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
-  RIGHT_TIM->RIGHT_TIM_W = (uint16_t)CLAMP(wr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
+  motor_right.set_pwm(
+    (uint16_t)CLAMP(ur + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
+    (uint16_t)CLAMP(vr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
+    (uint16_t)CLAMP(wr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin)
+  );
   // =================================================================
 
   /* Indicate task complete */

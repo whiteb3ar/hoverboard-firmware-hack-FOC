@@ -125,6 +125,7 @@ typedef struct
   uint16_t cmdLed;
   uint16_t checksum;
 } SerialFeedback;
+
 static SerialFeedback Feedback;
 #endif
 #if defined(FEEDBACK_SERIAL_USART2)
@@ -165,14 +166,11 @@ static uint8_t drive_mode;
 static uint16_t max_speed;
 #endif
 
-
-
 Buzzer buzzer;
 extern Hardware hardware;
 
 int main(void)
 {
-          
   hardware.hardware_init();
 
   BLDC_Init();

@@ -92,6 +92,72 @@ void unit_uart3_dma(uint8_t* buffer, int size) {
   UART_DisableRxErrors(&huart3);
 }
 
+void set_left_motor_disabled(uint8_t disabled) {
+  if (disabled)
+  {
+    LEFT_TIM->BDTR &= ~TIM_BDTR_MOE;
+  }
+  else
+  {
+    LEFT_TIM->BDTR |= TIM_BDTR_MOE;
+  }
+}
+
+void read_left_motor_hall(uint8_t* values) {
+  values[0] = !(LEFT_HALL_U_PORT->IDR & LEFT_HALL_U_PIN);
+  values[1] = !(LEFT_HALL_V_PORT->IDR & LEFT_HALL_V_PIN);
+  values[2] = !(LEFT_HALL_W_PORT->IDR & LEFT_HALL_W_PIN);
+}
+
+void set_left_motor_pwm(uint16_t u, uint16_t v, uint16_t w) {
+  LEFT_TIM->LEFT_TIM_U = u;
+  LEFT_TIM->LEFT_TIM_V = v;
+  LEFT_TIM->LEFT_TIM_W = w;
+}
+
+void set_right_motor_disabled(uint8_t disabled) {
+  if (disabled)
+  {
+    RIGHT_TIM->BDTR &= ~TIM_BDTR_MOE;
+  }
+  else
+  {
+    RIGHT_TIM->BDTR |= TIM_BDTR_MOE;
+  }
+}
+
+void read_right_motor_hall(uint8_t* values) {
+  values[0] = !(RIGHT_HALL_U_PORT->IDR & RIGHT_HALL_U_PIN);
+  values[1] = !(RIGHT_HALL_V_PORT->IDR & RIGHT_HALL_V_PIN);
+  values[2] = !(RIGHT_HALL_W_PORT->IDR & RIGHT_HALL_W_PIN);
+}
+
+void set_right_motor_pwm(uint16_t u, uint16_t v, uint16_t w) {
+  RIGHT_TIM->RIGHT_TIM_U = u;
+  RIGHT_TIM->RIGHT_TIM_V = v;
+  RIGHT_TIM->RIGHT_TIM_W = w;
+}
+
+void toggle_buzzer() {
+  HAL_GPIO_TogglePin(BUZZER_PORT, BUZZER_PIN);
+}
+
+void switch_buzzer_off() {
+  HAL_GPIO_WritePin(BUZZER_PORT, BUZZER_PIN, GPIO_PIN_RESET);
+}
+
+Motor motor_left = {
+  .read_hall = read_left_motor_hall,
+  .set_disabled = set_left_motor_disabled,
+  .set_pwm = set_left_motor_pwm
+};
+
+Motor motor_right = {
+  .read_hall = read_right_motor_hall,
+  .set_disabled = set_right_motor_disabled,
+  .set_pwm = set_right_motor_pwm
+};
+
 Logger logger = {
   .uart2_putchar = uart2_putchar,
   .uart3_putchar = uart3_putchar
