@@ -28,76 +28,51 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SETUP_H
-#define SETUP_H
+#ifndef COMMSMASTERSLAVE_H
+#define COMMSMASTERSLAVE_H
 
 #include "gd32f1x0.h"
 #include "config.h"
 
 
-#ifndef pinMode
-	void pinModePull	(uint32_t pin, uint32_t mode, uint32_t pull);
-	void pinMode(uint32_t pin, uint32_t mode);
+//----------------------------------------------------------------------------
+// Update USART master slave input
+//----------------------------------------------------------------------------
+void UpdateUSARTMasterSlaveInput(void);
+
+#ifdef MASTER
+//----------------------------------------------------------------------------
+// Send slave frame via USART
+//----------------------------------------------------------------------------
+void SendSlave(int16_t pwmSlave);
 #endif
 
-//#define USART0_RX_BUFFERSIZE 1
-//#define USART1_RX_BUFFERSIZE 1
-#define USART0_DATA_RX_ADDRESS ((uint32_t)0x40013824)	//((uint32_t)0x40013824)
-#define USART1_DATA_RX_ADDRESS ((uint32_t)0x40004424)
+#ifdef SLAVE
+//----------------------------------------------------------------------------
+// Send master frame via USART
+//----------------------------------------------------------------------------
+void SendMaster(FlagStatus upperLEDMaster, FlagStatus lowerLEDMaster, FlagStatus mosfetOutMaster, FlagStatus beepsBackwards);
 
-
-
-/*
-#define USART_MASTERSLAVE_RX_BUFFERSIZE 1
-#define USART_MASTERSLAVE_DATA_RX_ADDRESS ((uint32_t)0x40004424)
-
-#define USART_STEER_COM_RX_BUFFERSIZE 1
-#define USART_STEER_COM_DATA_RX_ADDRESS ((uint32_t)0x40013824)	//((uint32_t)0x40013824)
-// HarlebBob #define USART1_TDATA_ADDRESS    	((uint32_t)0x40004428)
-*/
+	
+//----------------------------------------------------------------------------
+// Sets mosfetOut value which will be send to master
+//----------------------------------------------------------------------------
+void SetMosfetOutMaster(FlagStatus value);
 
 //----------------------------------------------------------------------------
-// Initializes the interrupts
+// Returns MosfetOut value sent by master
 //----------------------------------------------------------------------------
-void Interrupt_init(void);
+FlagStatus GetMosfetOutMaster(void);
 
 //----------------------------------------------------------------------------
-// Initializes the watchdog
+// Sets beepsBackwards value which will be send to master
 //----------------------------------------------------------------------------
-ErrStatus Watchdog_init(void);
+void SetBeepsBackwardsMaster(FlagStatus value);
 
 //----------------------------------------------------------------------------
-// Initializes the timeout timer
+// Returns beepsBackwardsMaster value sent by master
 //----------------------------------------------------------------------------
-void TimeoutTimer_init(void);
-
-//----------------------------------------------------------------------------
-// Initializes the GPIOs
-//----------------------------------------------------------------------------
-void GPIO_init(void);
-
-//----------------------------------------------------------------------------
-// Initializes the PWM
-//----------------------------------------------------------------------------
-void PWM_init(void);
-
-//----------------------------------------------------------------------------
-// Initializes the ADC
-//----------------------------------------------------------------------------
-void ADC_init(void);
-
-
-void USART0_Init(uint32_t iBaud);
-void USART1_Init(uint32_t iBaud);
-
-//----------------------------------------------------------------------------
-// Initializes the usart master slave
-//----------------------------------------------------------------------------
-void USART_MasterSlave_init(void);
-
-//----------------------------------------------------------------------------
-// Initializes the steer/bluetooth usart
-//----------------------------------------------------------------------------
-void USART_Steer_COM_init(void);
+FlagStatus GetBeepsBackwardsMaster(void);
+#endif
 
 #endif

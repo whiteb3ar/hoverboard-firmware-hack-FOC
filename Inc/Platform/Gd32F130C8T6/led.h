@@ -28,76 +28,93 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SETUP_H
-#define SETUP_H
+#ifndef LED_H
+#define LED_H
 
 #include "gd32f1x0.h"
 #include "config.h"
 
+// Only slave has LED mechanism
+#ifdef SLAVE
 
-#ifndef pinMode
-	void pinModePull	(uint32_t pin, uint32_t mode, uint32_t pull);
-	void pinMode(uint32_t pin, uint32_t mode);
+// Modes for RGB-LED operation
+typedef enum
+{
+	LED_OFF = 0,
+	LED_HSB = 1,
+	LED_HSB_BLINK = 2,
+	LED_HSB_FADE = 3,
+	LED_HSB_STROBE = 4
+} LED_PROGRAM;
+
+#define COUNT_PROGRAMS 6	// Count of LED programs!!
+
+//----------------------------------------------------------------------------
+// Update RGB LED output with 16kHz
+//----------------------------------------------------------------------------
+void CalculateLEDPWM(void);
+
+//----------------------------------------------------------------------------
+// Update RGB LED program every 1ms
+//----------------------------------------------------------------------------
+void CalculateLEDProgram(void);
+
+//----------------------------------------------------------------------------
+// Sets/Gets LED program
+//----------------------------------------------------------------------------
+void SetRGBProgram(LED_PROGRAM Program);
+LED_PROGRAM GetRGBProgram(void);
+
+//----------------------------------------------------------------------------
+// Sets/Gets hue from 0-764
+//----------------------------------------------------------------------------
+void SetHSBHue(uint16_t hue);
+uint16_t GetHSBHue(void);
+
+//----------------------------------------------------------------------------
+// Sets/Gets saturation from 0-128
+//----------------------------------------------------------------------------
+void SetHSBSaturation(uint8_t saturation);
+uint8_t GetHSBSaturation(void);
+
+//----------------------------------------------------------------------------
+// Sets/Gets brightness from 0-63
+//----------------------------------------------------------------------------
+void SetHSBBrightness(uint8_t brightnessVal);
+uint8_t GetHSBBrightness(void);
+
+
+//----------------------------------------------------------------------------
+// Sets/Gets fading speed from 200-1000
+//----------------------------------------------------------------------------
+void SetSpeedFading(uint16_t speed);
+uint16_t GetSpeedFading(void);
+
+//----------------------------------------------------------------------------
+// Sets/Gets blink speed from 700-2400
+//----------------------------------------------------------------------------
+void SetSpeedBlink(uint16_t speed);
+uint16_t GetSpeedBlink(void);
+
+//----------------------------------------------------------------------------
+// Sets/Gets strobe speed from 0-1000
+//----------------------------------------------------------------------------
+void SetSpeedStrobe(uint16_t speed);
+uint16_t GetSpeedStrobe(void);
+
+// Sets upper LED value which will be send to master
+void SetUpperLEDMaster(FlagStatus value);
+
+// Returns upper LED value sent by master
+FlagStatus GetUpperLEDMaster(void);
+
+// Sets lower LED value which will be send to master
+void SetLowerLEDMaster(FlagStatus value);
+
+// Returns lower LED value sent by master
+FlagStatus GetLowerLEDMaster(void);
+
+
 #endif
-
-//#define USART0_RX_BUFFERSIZE 1
-//#define USART1_RX_BUFFERSIZE 1
-#define USART0_DATA_RX_ADDRESS ((uint32_t)0x40013824)	//((uint32_t)0x40013824)
-#define USART1_DATA_RX_ADDRESS ((uint32_t)0x40004424)
-
-
-
-/*
-#define USART_MASTERSLAVE_RX_BUFFERSIZE 1
-#define USART_MASTERSLAVE_DATA_RX_ADDRESS ((uint32_t)0x40004424)
-
-#define USART_STEER_COM_RX_BUFFERSIZE 1
-#define USART_STEER_COM_DATA_RX_ADDRESS ((uint32_t)0x40013824)	//((uint32_t)0x40013824)
-// HarlebBob #define USART1_TDATA_ADDRESS    	((uint32_t)0x40004428)
-*/
-
-//----------------------------------------------------------------------------
-// Initializes the interrupts
-//----------------------------------------------------------------------------
-void Interrupt_init(void);
-
-//----------------------------------------------------------------------------
-// Initializes the watchdog
-//----------------------------------------------------------------------------
-ErrStatus Watchdog_init(void);
-
-//----------------------------------------------------------------------------
-// Initializes the timeout timer
-//----------------------------------------------------------------------------
-void TimeoutTimer_init(void);
-
-//----------------------------------------------------------------------------
-// Initializes the GPIOs
-//----------------------------------------------------------------------------
-void GPIO_init(void);
-
-//----------------------------------------------------------------------------
-// Initializes the PWM
-//----------------------------------------------------------------------------
-void PWM_init(void);
-
-//----------------------------------------------------------------------------
-// Initializes the ADC
-//----------------------------------------------------------------------------
-void ADC_init(void);
-
-
-void USART0_Init(uint32_t iBaud);
-void USART1_Init(uint32_t iBaud);
-
-//----------------------------------------------------------------------------
-// Initializes the usart master slave
-//----------------------------------------------------------------------------
-void USART_MasterSlave_init(void);
-
-//----------------------------------------------------------------------------
-// Initializes the steer/bluetooth usart
-//----------------------------------------------------------------------------
-void USART_Steer_COM_init(void);
 
 #endif

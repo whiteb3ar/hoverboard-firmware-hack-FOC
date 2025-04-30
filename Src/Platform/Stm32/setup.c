@@ -161,16 +161,19 @@ void switch_buzzer_off()
 Motor motor_left = {
     .read_hall = read_left_motor_hall,
     .set_disabled = set_left_motor_disabled,
-    .set_pwm = set_left_motor_pwm};
+    .set_pwm = set_left_motor_pwm
+};
 
 Motor motor_right = {
     .read_hall = read_right_motor_hall,
     .set_disabled = set_right_motor_disabled,
-    .set_pwm = set_right_motor_pwm};
+    .set_pwm = set_right_motor_pwm
+};
 
 Logger logger = {
     .uart2_putchar = uart2_putchar,
-    .uart3_putchar = uart3_putchar};
+    .uart3_putchar = uart3_putchar
+};
 
 Hardware hardware = {
     .activate_latch = activate_latch,
@@ -187,7 +190,8 @@ Hardware hardware = {
     .read_configuration = read_configuration,
     .read_configuration_value = read_configuration_value,
 
-    .reset = reset};
+    .reset = reset
+};
 
 void init_eeprom(void)
 {

@@ -19,9 +19,7 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Define to prevent recursive inclusion
-#ifndef DEFINES_H
-#define DEFINES_H
+#pragma once
 
 #include <stdint.h>
 #include "config.h"
@@ -104,6 +102,3 @@ void PWM_ISR_CH2_Callback(void);
 #define SWB_SET             (0x0600)   //  0000 0110 0000 0000
 #define SWC_SET             (0x1800)   //  0001 1000 0000 0000
 #define SWD_SET             (0x2000)   //  0010 0000 0000 0000
-
-#endif // DEFINES_H
-
