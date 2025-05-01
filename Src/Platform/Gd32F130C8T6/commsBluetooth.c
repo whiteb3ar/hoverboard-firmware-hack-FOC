@@ -32,7 +32,6 @@
 #include "Platform/Gd32F130C8T6/comms.h"
 #include "Platform/Gd32F130C8T6/commsMasterSlave.h"
 #include "Platform/Gd32F130C8T6/commsBluetooth.h"
-#include "Platform/Gd32F130C8T6/led.h"
 #include <stdio.h>
 #include <string.h>
 

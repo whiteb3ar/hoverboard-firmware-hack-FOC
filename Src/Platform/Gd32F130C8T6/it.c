@@ -30,13 +30,11 @@
 
 #include "defines_Gd32F130C8T6.h"
 #include "it.h"
-#include "bldc.h"
-#include "led.h"
 #include "commsMasterSlave.h"
-
 //#include "commsSteering.h"
-
 #include "commsBluetooth.h"
+
+#include <platform.h>
 
 uint32_t msTicks;
 uint32_t timeoutCounter_ms = 0;
@@ -48,7 +46,6 @@ uint32_t hornCounter_ms = 0;
 
 extern int32_t steer;
 extern int32_t speed;
-extern FlagStatus activateWeakening;
 extern FlagStatus beepsBackwards;
 
 //----------------------------------------------------------------------------
@@ -76,44 +73,19 @@ void TIMEOUT_IrqHandler(void)
 {	
 	if (timeoutCounter_ms > TIMEOUT_MS)
 	{
-		
-		// First timeout reset all process values
-		if (timedOut == RESET)	// robo: had been RESET = bug ?
+		if (timedOut == RESET)
 		{
-#ifdef MASTER
-			steer = 0;
-			speed = 0;
-			beepsBackwards = RESET;
-#else
-			SetPWM(0);
-#endif
+			//do reset if required
 		}
 		
-		timedOut = SET;		// robo: had been SET = bug ?
-		
+		timedOut = SET;
 	}
 	else
 	{
-		timedOut = RESET;		// robo: had been RESET = bug ?
+		timedOut = RESET;
 		timeoutCounter_ms++;
 	}
-
-#ifdef SLAVE
-	if (hornCounter_ms >= 2000)
-	{
-		// Avoid horn to be activated longer than 2 seconds
-		SetUpperLEDMaster(RESET);
-	}
-	else if (hornCounter_ms < 2000)
-	{
-		hornCounter_ms++;
-	}
 	
-	// Update LED program
-	CalculateLEDProgram();
-#endif
-	
-	// Clear timer update interrupt flag
 	timer_interrupt_flag_clear(TIMER_TIMEOUT, TIMER_INT_UP);
 }
 

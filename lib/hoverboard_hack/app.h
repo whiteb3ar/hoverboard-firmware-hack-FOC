@@ -17,9 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Define to prevent recursive inclusion
-#ifndef UTIL_H
-#define UTIL_H
+#pragma once
 
 #include <stdint.h>
 
@@ -156,6 +154,7 @@ typedef struct
   void (*toggle_buzzer)(void);
   void (*switch_buzzer_off)(void);
 
+  void (*reset_watchdog)(void);
   void (*reset)(void);
 } Hardware;
 
@@ -175,5 +174,3 @@ typedef struct
 extern uint16_t VirtAddVarTab[NB_OF_VAR];
 
 void main_bldc_irq_loop(void);
-
-#endif

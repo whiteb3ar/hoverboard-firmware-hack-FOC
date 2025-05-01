@@ -175,6 +175,11 @@ Logger logger = {
     .uart3_putchar = uart3_putchar
 };
 
+
+void reset_watchdog() {
+  //do nothing
+}
+
 Hardware hardware = {
     .activate_latch = activate_latch,
     .hardware_init = hardware_init,
@@ -190,6 +195,7 @@ Hardware hardware = {
     .read_configuration = read_configuration,
     .read_configuration_value = read_configuration_value,
 
+    .reset_watchdog = reset_watchdog,
     .reset = reset
 };
 

@@ -3,8 +3,6 @@
 #include "it.h"
 #include "comms.h"
 #include "commsMasterSlave.h"
-#include "bldc.h"
-#include "led.h"
 #include "stdio.h"
 #include "string.h"
 

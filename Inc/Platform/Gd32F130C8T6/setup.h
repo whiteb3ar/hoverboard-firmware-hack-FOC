@@ -27,9 +27,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef SETUP_H
-#define SETUP_H
+#pragma once
 
 #include "gd32f1x0.h"
 #include "config.h"
@@ -44,8 +42,6 @@
 //#define USART1_RX_BUFFERSIZE 1
 #define USART0_DATA_RX_ADDRESS ((uint32_t)0x40013824)	//((uint32_t)0x40013824)
 #define USART1_DATA_RX_ADDRESS ((uint32_t)0x40004424)
-
-
 
 /*
 #define USART_MASTERSLAVE_RX_BUFFERSIZE 1
@@ -99,5 +95,3 @@ void USART_MasterSlave_init(void);
 // Initializes the steer/bluetooth usart
 //----------------------------------------------------------------------------
 void USART_Steer_COM_init(void);
-
-#endif

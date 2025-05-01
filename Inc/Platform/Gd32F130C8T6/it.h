@@ -28,8 +28,7 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef IT_H
-#define IT_H
+#pragma once
 
 #include "gd32f1x0.h"
 #include "config.h"
@@ -48,5 +47,3 @@ uint32_t millis( void );
 // Delays number of tick Systicks (happens every 10 ms)
 //----------------------------------------------------------------------------
 void Delay (uint32_t dlyTicks);
-
-#endif

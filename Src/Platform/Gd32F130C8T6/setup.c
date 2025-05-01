@@ -31,10 +31,13 @@
 
 #include "defines_Gd32F130C8T6.h"
 #include "it.h"
+#include "setup.h"
 
-// void delay(uint16_t ms) {
-//     Delay(ms);
-// }
+#include <platform.h>
+
+void delay(uint16_t ms) {
+    Delay(ms);
+}
 
 // //----------------------------------------------------------------------------
 // // Send buffer via USART
@@ -221,84 +224,78 @@ void GPIO_init(void)
 	pinModeAF(BLDC_YH, AF_TIMER0_BLDC, TIMER_BLDC_PULLUP, GPIO_OSPEED_2MHZ);
 	pinModeAF(BLDC_YL, AF_TIMER0_BLDC, TIMER_BLDC_PULLUP, GPIO_OSPEED_2MHZ);
 
-
-	
-	#ifndef REMOTE_AUTODETECT
-	
-	
-		#ifdef DEBUG_LED_PIN
-			gpio_mode_set(DEBUG_LED_PORT , GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,DEBUG_LED_PIN);	
-			gpio_output_options_set(DEBUG_LED_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_10MHZ, DEBUG_LED_PIN);
-		#endif
+	#ifdef DEBUG_LED_PIN
+		gpio_mode_set(DEBUG_LED_PORT , GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,DEBUG_LED_PIN);	
+		gpio_output_options_set(DEBUG_LED_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_10MHZ, DEBUG_LED_PIN);
+	#endif
 
 
-		#ifdef LED_GREEN
-			pinMode(LED_GREEN,	GPIO_MODE_OUTPUT);
-		#endif
-		#ifdef LED_RED
-			pinMode(LED_RED,		GPIO_MODE_OUTPUT);
-		#endif
-		#ifdef LED_ORANGE
-			pinMode(LED_ORANGE,	GPIO_MODE_OUTPUT);
-		#endif
-		#ifdef UPPER_LED
-			pinMode(UPPER_LED,	GPIO_MODE_OUTPUT);
-		#endif
-		#ifdef LOWER_LED
-			pinMode(LOWER_LED,	GPIO_MODE_OUTPUT);
-		#endif
-		#ifdef MOSFET_OUT
-			pinMode(MOSFET_OUT,	GPIO_MODE_OUTPUT);
-		#endif
+	#ifdef LED_GREEN
+		pinMode(LED_GREEN,	GPIO_MODE_OUTPUT);
+	#endif
+	#ifdef LED_RED
+		pinMode(LED_RED,		GPIO_MODE_OUTPUT);
+	#endif
+	#ifdef LED_ORANGE
+		pinMode(LED_ORANGE,	GPIO_MODE_OUTPUT);
+	#endif
+	#ifdef UPPER_LED
+		pinMode(UPPER_LED,	GPIO_MODE_OUTPUT);
+	#endif
+	#ifdef LOWER_LED
+		pinMode(LOWER_LED,	GPIO_MODE_OUTPUT);
+	#endif
+	#ifdef MOSFET_OUT
+		pinMode(MOSFET_OUT,	GPIO_MODE_OUTPUT);
+	#endif
 
 
-		#ifdef DEBUG_LED_PIN
-			gpio_mode_set(DEBUG_LED_PORT , GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,DEBUG_LED_PIN);	
-			gpio_output_options_set(DEBUG_LED_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_10MHZ, DEBUG_LED_PIN);
-		#endif
+	#ifdef DEBUG_LED_PIN
+		gpio_mode_set(DEBUG_LED_PORT , GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,DEBUG_LED_PIN);	
+		gpio_output_options_set(DEBUG_LED_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_10MHZ, DEBUG_LED_PIN);
+	#endif
+
+
+	// Init HAL input
+	pinMode(HALL_A,	GPIO_MODE_INPUT);
+	pinMode(HALL_B,	GPIO_MODE_INPUT);
+	pinMode(HALL_C,	GPIO_MODE_INPUT);
+
+	// Init ADC pins
+	#ifdef VBATT
+		pinMode(VBATT, GPIO_MODE_ANALOG);
+	#endif
+	#ifdef CURRENT_DC
+		pinMode(CURRENT_DC, GPIO_MODE_ANALOG);
+	#endif
 	
+	// Init self hold
+	#ifdef SELF_HOLD
+		pinMode(SELF_HOLD,	GPIO_MODE_OUTPUT);
+	#endif
+
+	#ifdef BUZZER
+		// Init buzzer
+		pinModeSpeed(BUZZER,	GPIO_MODE_OUTPUT,GPIO_OSPEED_50MHZ);
+		//gpio_mode_set(BUZZER_PORT , GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, BUZZER_PIN);	
+		//gpio_output_options_set(BUZZER_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, BUZZER_PIN);
+	#endif
+
+	#ifdef MASTER_OR_SINGLE
 	
-		// Init HAL input
-		pinMode(HALL_A,	GPIO_MODE_INPUT);
-		pinMode(HALL_B,	GPIO_MODE_INPUT);
-		pinMode(HALL_C,	GPIO_MODE_INPUT);
-	
-		// Init ADC pins
-		#ifdef VBATT
-			pinMode(VBATT, GPIO_MODE_ANALOG);
-		#endif
-		#ifdef CURRENT_DC
-			pinMode(CURRENT_DC, GPIO_MODE_ANALOG);
+		// Init button
+		#ifdef BUTTON_PU
+			pinModePull(BUTTON_PU,GPIO_MODE_INPUT,GPIO_PUPD_PULLUP);
+		#else
+			pinMode(BUTTON,	GPIO_MODE_INPUT);
 		#endif
 		
-		// Init self hold
-		#ifdef SELF_HOLD
-			pinMode(SELF_HOLD,	GPIO_MODE_OUTPUT);
+		#ifdef CHARGE_STATE_PIN
+			// Init charge state
+			pinModePull(CHARGE_STATE,GPIO_MODE_INPUT, GPIO_PUPD_PULLUP);
+			//gpio_mode_set(CHARGE_STATE_PORT, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, CHARGE_STATE_PIN);
 		#endif
-
-		#ifdef BUZZER
-			// Init buzzer
-			pinModeSpeed(BUZZER,	GPIO_MODE_OUTPUT,GPIO_OSPEED_50MHZ);
-			//gpio_mode_set(BUZZER_PORT , GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, BUZZER_PIN);	
-			//gpio_output_options_set(BUZZER_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, BUZZER_PIN);
-		#endif
-
-		#ifdef MASTER_OR_SINGLE
-		
-			// Init button
-			#ifdef BUTTON_PU
-				pinModePull(BUTTON_PU,GPIO_MODE_INPUT,GPIO_PUPD_PULLUP);
-			#else
-				pinMode(BUTTON,	GPIO_MODE_INPUT);
-			#endif
-			
-			#ifdef CHARGE_STATE_PIN
-				// Init charge state
-				pinModePull(CHARGE_STATE,GPIO_MODE_INPUT, GPIO_PUPD_PULLUP);
-				//gpio_mode_set(CHARGE_STATE_PORT, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, CHARGE_STATE_PIN);
-			#endif
-		#endif
-	#endif // 	#ifndef REMOTE_AUTODETECT
+	#endif
 
 }
 	
@@ -440,19 +437,13 @@ void ADC_init(void)
 	// Enable DMA channel 0
 	dma_channel_enable(DMA_CH0);
 	
-	
-	#ifdef REMOTE_AUTODETECT
-		adc_channel_length_config(ADC_REGULAR_CHANNEL, 1);
-		adc_regular_channel_config(0, PIN_TO_CHANNEL(TODO_PIN), ADC_SAMPLETIME_13POINT5);
-			// for some reason, the adc channel 1 used for VBat (3.3V) has to be set to TODO_PIN = PF4
-	#else
-		adc_channel_length_config(ADC_REGULAR_CHANNEL, 2);
-		#ifdef VBATT
-			adc_regular_channel_config(0, PIN_TO_CHANNEL(VBATT), ADC_SAMPLETIME_13POINT5);
-		#endif
-		#ifdef CURRENT_DC
-			adc_regular_channel_config(1, PIN_TO_CHANNEL(CURRENT_DC), ADC_SAMPLETIME_13POINT5);
-		#endif
+	adc_channel_length_config(ADC_REGULAR_CHANNEL, 2);
+
+	#ifdef VBATT
+		adc_regular_channel_config(0, PIN_TO_CHANNEL(VBATT), ADC_SAMPLETIME_13POINT5);
+	#endif
+	#ifdef CURRENT_DC
+		adc_regular_channel_config(1, PIN_TO_CHANNEL(CURRENT_DC), ADC_SAMPLETIME_13POINT5);
 	#endif
 	
 	adc_data_alignment_config(ADC_DATAALIGN_RIGHT);
@@ -463,9 +454,8 @@ void ADC_init(void)
 
 	// Disable the temperature sensor, Vrefint and vbat channel
 	adc_tempsensor_vrefint_disable();
-	#ifndef REMOTE_AUTODETECT
-		TARGET_adc_vbat_disable();
-	#endif
+	
+	TARGET_adc_vbat_disable();
 	
 	// ADC analog watchdog disable
 	adc_watchdog_disable();

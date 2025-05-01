@@ -23,14 +23,14 @@
 #include <stdio.h>
 #include <stdlib.h> // for abs()
 
-#include "defines.h"
-#include "config.h"
-#include "app.h"
-#include "BLDC_controller.h" /* BLDC's header file */
-#include "rtwtypes.h"
-#include "comms.h"
-#include "buzzer.h"
-#include "platform.h"
+#include <defines.h>
+#include <config.h>
+#include <app.h>
+#include <BLDC_controller.h>
+#include <rtwtypes.h>
+#include <comms.h>
+#include <buzzer.h>
+#include <platform.h>
 
 // #include "stm32f1xx_hal.h"
 
@@ -662,6 +662,8 @@ int main(void)
 		inIdx_prev = inIdx;
 		bldc_timer_prev = bldc_timer;
 		main_loop_counter++;
+
+		hardware.reset_watchdog();
 	}
 }
 }

@@ -1,7 +1,6 @@
 #include "defines_Gd32F130C8T6.h"
 #include "it.h"
 #include "comms.h"
-#include "bldc.h"
 #include "stdio.h"
 #include "string.h"
 

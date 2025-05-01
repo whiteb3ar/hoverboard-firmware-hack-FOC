@@ -6,15 +6,11 @@
 #include "config.h"
 #include "remote.h"
 
-#if defined(REMOTE_AUTODETECT)
-	#include "defines_2-ad.h"		// https://github.com/RoboDurden/Hoverboard-Firmware-Hack-Gen2.x/issues/??
-#else
-	#define STRINGIZE_AUX(a) #a
-	#define STRINGIZE(a) STRINGIZE_AUX(a)
-	#define INCLUE_FILE(target,version) STRINGIZE(defines_2-target-version.h)
+#define STRINGIZE_AUX(a) #a
+#define STRINGIZE(a) STRINGIZE_AUX(a)
+#define INCLUE_FILE(target,version) STRINGIZE(defines_2-target-version.h)
 
-	#include INCLUE_FILE(TARGET , LAYOUT)	// "defines_2-target-version.h"
-#endif
+#include INCLUE_FILE(TARGET , LAYOUT)	// "defines_2-target-version.h"
 
 #ifdef BUTTON
 	#define BUTTON_PUSHED 1
@@ -63,7 +59,7 @@
 
 #if defined(REMOTE_UART) || defined(REMOTE_UARTBUS) || defined(REMOTE_CRSF)
 	#if !defined(USART0_REMOTE) && !defined(USART1_REMOTE)
-		#error "a usart remote selected in config.h but neither USART0_REMOTE nor USART1_REMOTE in your defines_2-?.h
+		#error "a usart remote selected in config.h but neither USART0_REMOTE nor USART1_REMOTE in your defines_2-?.h"
 	#endif
 #endif
 
