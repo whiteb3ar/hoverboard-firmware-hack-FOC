@@ -1,4 +1,4 @@
-#include "platform.h";
+#include "platform.h"
 #include "buzzer.h"
 
 void buzzer_init(Buzzer *buzzer)
