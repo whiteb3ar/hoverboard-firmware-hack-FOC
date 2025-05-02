@@ -7,8 +7,8 @@
 
 #include "pcf8574.h"
 
-PCF8574_RESULT PCF8574_Init(PCF8574_HandleTypeDef* handle) {
-
+PCF8574_RESULT PCF8574_Init(PCF8574_HandleTypeDef *handle)
+{
 	handle->PCF_I2C_ADDRESS &= 0x07;
 
 	/*if (handle->i2c.State == HAL_I2C_STATE_RESET) {
@@ -25,16 +25,19 @@ PCF8574_RESULT PCF8574_Init(PCF8574_HandleTypeDef* handle) {
 	return PCF8574_OK;
 }
 
-PCF8574_RESULT PCF8574_DeInit(PCF8574_HandleTypeDef* handle) {
+PCF8574_RESULT PCF8574_DeInit(PCF8574_HandleTypeDef *handle)
+{
 	HAL_I2C_DeInit(&handle->i2c);
 	return PCF8574_OK;
 }
 
-PCF8574_RESULT PCF8574_Write(PCF8574_HandleTypeDef* handle, uint8_t val) {
+PCF8574_RESULT PCF8574_Write(PCF8574_HandleTypeDef *handle, uint8_t val)
+{
 	if (HAL_I2C_Master_Transmit(&handle->i2c,
-			(handle->PCF_I2C_ADDRESS << 1) | PCF8574_I2C_ADDRESS_MASK, &val, 1,
-			handle->PCF_I2C_TIMEOUT) != HAL_OK) {
-		//handle->errorCallback(PCF8574_ERROR);
+								(handle->PCF_I2C_ADDRESS << 1) | PCF8574_I2C_ADDRESS_MASK, &val, 1,
+								handle->PCF_I2C_TIMEOUT) != HAL_OK)
+	{
+		// handle->errorCallback(PCF8574_ERROR);
 		return PCF8574_ERROR;
 	}
 
@@ -44,14 +47,16 @@ PCF8574_RESULT PCF8574_Write(PCF8574_HandleTypeDef* handle, uint8_t val) {
 		//<return PCF8574_ERROR;
 	}*/
 
-	//HAL_I2C_Master_Transmit_DMA(&hi2c2, 0xA4, (uint8_t*)ai2cBuffer, 2);
+	// HAL_I2C_Master_Transmit_DMA(&hi2c2, 0xA4, (uint8_t*)ai2cBuffer, 2);
 	return PCF8574_OK;
 }
 
-PCF8574_RESULT PCF8574_Read(PCF8574_HandleTypeDef* handle, uint8_t* val) {
+PCF8574_RESULT PCF8574_Read(PCF8574_HandleTypeDef *handle, uint8_t *val)
+{
 	if (HAL_I2C_Master_Receive(&handle->i2c,
-			(handle->PCF_I2C_ADDRESS << 1) | PCF8574_I2C_ADDRESS_MASK, val, 1,
-			handle->PCF_I2C_TIMEOUT) != HAL_OK) {
+							   (handle->PCF_I2C_ADDRESS << 1) | PCF8574_I2C_ADDRESS_MASK, val, 1,
+							   handle->PCF_I2C_TIMEOUT) != HAL_OK)
+	{
 		return PCF8574_ERROR;
 	}
 	return PCF8574_OK;
