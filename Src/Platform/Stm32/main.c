@@ -30,6 +30,8 @@
 #include "BLDC_controller.h"      /* BLDC's header file */
 #include "rtwtypes.h"
 #include "comms.h"
+#include "buzzer.h"
+#include "platform.h"
 
 #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
 #include "hd44780.h"
@@ -103,8 +105,15 @@ extern volatile uint16_t pwm_captured_ch2_value;
 // Global variables set here in main.c
 //------------------------------------------------------------------------
 uint8_t backwardDrive;
+
+
+Buzzer buzzer;
+
 extern volatile uint32_t bldc_timer;
+static uint32_t    bldc_timer_prev = 0;
+
 volatile uint32_t main_loop_counter;
+
 int16_t batVoltageCalib;         // global variable for calibrated battery voltage
 int16_t board_temp_deg_c;        // global variable for calibrated temperature in degrees Celsius
 int16_t left_dc_curr;            // global variable for Left DC Link current 
@@ -158,7 +167,6 @@ static int16_t    speed;                // local variable for speed. -1000 to 10
   static int32_t  speedFixdt;           // local fixed-point variable for speed low-pass filter
 #endif
 
-static uint32_t    bldc_timer_prev = 0;
 static uint32_t    inactivity_timeout_counter;
 static MultipleTap MultipleTapBrake;    // define multiple tap functionality for the Brake pedal
 
@@ -207,7 +215,9 @@ int main(void) {
   HAL_ADC_Start(&hadc1);
   HAL_ADC_Start(&hadc2);
 
-  poweronMelody();
+  buzzer_init(&buzzer);
+
+  poweronMelody(&buzzer);
   HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
   
   int32_t board_temp_adcFixdt = adc_buffer.temp << 16;  // Fixed-point filter output initialized with current ADC converted to fixed-point
@@ -238,13 +248,13 @@ int main(void) {
   #endif
 
   // Loop until button is released
-  while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { HAL_Delay(10); }
+  while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { delay(10); }
 
   #ifdef MULTI_MODE_DRIVE
     // Wait until triggers are released. Exit if timeout elapses (to unblock if the inputs are not calibrated)
     int iTimeout = 0;
     while((adc_buffer.l_rx2 + adc_buffer.l_tx2) >= (input1[0].min + input2[0].min) && iTimeout++ < 300) {
-      HAL_Delay(10);
+      delay(10);
     }
   #endif
 
@@ -258,8 +268,8 @@ int main(void) {
       // ####### MOTOR ENABLING: Only if the initial input is very small (for SAFETY) #######
       if (enable == 0 && !rtY_Left.z_errCode && !rtY_Right.z_errCode && 
           ABS(input1[inIdx].cmd) < 50 && ABS(input2[inIdx].cmd) < 50){
-        beepShort(6);                     // make 2 beeps indicating the motor enable
-        beepShort(4); HAL_Delay(100);
+        beepShort(&buzzer, 6);                     // make 2 beeps indicating the motor enable
+        beepShort(&buzzer, 4); delay(100);
         steerFixdt = speedFixdt = 0;      // reset filters
         enable = 1;                       // enable motors
         #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
@@ -410,7 +420,7 @@ int main(void) {
           LCD_SetLocation(&lcd,  8, 0); LCD_WriteString(&lcd, "m(");
           LCD_SetLocation(&lcd, 14, 0); LCD_WriteString(&lcd, "m)");
         #endif
-        HAL_Delay(1000);
+        delay(1000);
         nunchuk_connected = 0;
       }
 
@@ -419,7 +429,7 @@ int main(void) {
         beepLong(5);
         #ifdef SUPPORT_LCD
           LCD_ClearDisplay(&lcd);
-          HAL_Delay(5);
+          delay(5);
           LCD_SetLocation(&lcd, 0, 0); LCD_WriteString(&lcd, "Emergency Off!");
           LCD_SetLocation(&lcd, 0, 1); LCD_WriteString(&lcd, "Keeper too fast.");
         #endif
@@ -554,24 +564,24 @@ int main(void) {
       poweroff();
     } else if (rtY_Left.z_errCode || rtY_Right.z_errCode) {                                           // 1 beep (low pitch): Motor error, disable motors
       enable = 0;
-      beepCount(1, 24, 1);
+      beepCount(&buzzer, 1, 24, 1);
     } else if (timeoutFlgADC) {                                                                       // 2 beeps (low pitch): ADC timeout
-      beepCount(2, 24, 1);
+      beepCount(&buzzer, 2, 24, 1);
     } else if (timeoutFlgSerial) {                                                                    // 3 beeps (low pitch): Serial timeout
-      beepCount(3, 24, 1);
+      beepCount(&buzzer, 3, 24, 1);
     } else if (timeoutFlgGen) {                                                                       // 4 beeps (low pitch): General timeout (PPM, PWM, Nunchuk)
-      beepCount(4, 24, 1);
+      beepCount(&buzzer, 4, 24, 1);
     } else if (TEMP_WARNING_ENABLE && board_temp_deg_c >= TEMP_WARNING) {                             // 5 beeps (low pitch): Mainboard temperature warning
-      beepCount(5, 24, 1);
+      beepCount(&buzzer, 5, 24, 1);
     } else if (BAT_LVL1_ENABLE && batVoltage < BAT_LVL1) {                                            // 1 beep fast (medium pitch): Low bat 1
-      beepCount(0, 10, 6);
+      beepCount(&buzzer, 0, 10, 6);
     } else if (BAT_LVL2_ENABLE && batVoltage < BAT_LVL2) {                                            // 1 beep slow (medium pitch): Low bat 2
-      beepCount(0, 10, 30);
+      beepCount(&buzzer, 0, 10, 30);
     } else if (BEEPS_BACKWARD && (((cmdR < -50 || cmdL < -50) && speedAvg < 0) || MultipleTapBrake.b_multipleTap)) { // 1 beep fast (high pitch): Backward spinning motors
-      beepCount(0, 5, 1);
+      beepCount(&buzzer, 0, 5, 1);
       backwardDrive = 1;
     } else {  // do not beep
-      beepCount(0, 0, 0);
+      beepCount(&buzzer, 0, 0, 0);
       backwardDrive = 0;
     }
 

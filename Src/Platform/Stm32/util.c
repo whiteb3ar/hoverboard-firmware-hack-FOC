@@ -30,6 +30,8 @@
 #include "BLDC_controller.h"
 #include "rtwtypes.h"
 #include "comms.h"
+#include "buzzer.h"
+#include "platform.h"
 
 #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
 #include "hd44780.h"
@@ -47,9 +49,8 @@ extern UART_HandleTypeDef huart3;
 
 extern int16_t batVoltage;
 extern uint8_t backwardDrive;
-extern uint8_t buzzerCount;             // global variable for the buzzer counts. can be 1, 2, 3, 4, 5, 6, 7...
-extern uint8_t buzzerFreq;              // global variable for the buzzer pitch. can be 1, 2, 3, 4, 5, 6, 7...
-extern uint8_t buzzerPattern;           // global variable for the buzzer pattern. can be 1, 2, 3, 4, 5, 6, 7...
+
+extern Buzzer buzzer;
 
 extern uint8_t enable;                  // global variable for motor enable
 
@@ -363,7 +364,7 @@ void Input_Init(void) {
 
   #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
     I2C_Init();
-    HAL_Delay(50);
+    delay(50);
     lcd.pcf8574.PCF_I2C_ADDRESS = 0x27;
     lcd.pcf8574.PCF_I2C_TIMEOUT = 5;
     lcd.pcf8574.i2c             = hi2c2;
@@ -376,7 +377,7 @@ void Input_Init(void) {
     }
 
     LCD_ClearDisplay(&lcd);
-    HAL_Delay(5);
+    delay(5);
     LCD_SetLocation(&lcd, 0, 0);
     #ifdef VARIANT_TRANSPOTTER
       LCD_WriteString(&lcd, "TranspOtter V2.1");
@@ -388,7 +389,7 @@ void Input_Init(void) {
 
   #if defined(VARIANT_TRANSPOTTER) && defined(SUPPORT_LCD)
     LCD_ClearDisplay(&lcd);
-    HAL_Delay(5);
+    delay(5);
     LCD_SetLocation(&lcd,  0, 1); LCD_WriteString(&lcd, "Bat:");
     LCD_SetLocation(&lcd,  8, 1); LCD_WriteString(&lcd, "V");
     LCD_SetLocation(&lcd, 15, 1); LCD_WriteString(&lcd, "A");
@@ -415,47 +416,6 @@ void UART_DisableRxErrors(UART_HandleTypeDef *huart)
 
 
 /* =========================== General Functions =========================== */
-
-void poweronMelody(void) {
-    buzzerCount = 0;  // prevent interraction with beep counter
-    for (int i = 8; i >= 0; i--) {
-      buzzerFreq = (uint8_t)i;
-      HAL_Delay(100);
-    }
-    buzzerFreq = 0;
-}
-
-void beepCount(uint8_t cnt, uint8_t freq, uint8_t pattern) {
-    buzzerCount   = cnt;
-    buzzerFreq    = freq;
-    buzzerPattern = pattern;
-}
-
-void beepLong(uint8_t freq) {
-    buzzerCount = 0;  // prevent interraction with beep counter
-    buzzerFreq = freq;
-    HAL_Delay(500);
-    buzzerFreq = 0;
-}
-
-void beepShort(uint8_t freq) {
-    buzzerCount = 0;  // prevent interraction with beep counter
-    buzzerFreq = freq;
-    HAL_Delay(100);
-    buzzerFreq = 0;
-}
-
-void beepShortMany(uint8_t cnt, int8_t dir) {
-    if (dir >= 0) {   // increasing tone
-      for(uint8_t i = 2*cnt; i >= 2; i=i-2) {
-        beepShort(i + 3);
-      }
-    } else {          // decreasing tone
-      for(uint8_t i = 2; i <= 2*cnt; i=i+2) {
-        beepShort(i + 3);
-      }
-    }
-}
 
 void calcAvgSpeed(void) {
     // Calculate measured average speed. The minus sign (-) is because motors spin in opposite directions
@@ -541,7 +501,7 @@ void adcCalibLim(void) {
     INPUT1_MAX_temp = MAX(INPUT1_MAX_temp, INPUT1_MID_temp);
     INPUT2_MIN_temp = MIN(INPUT2_MIN_temp, INPUT2_MID_temp);
     INPUT2_MAX_temp = MAX(INPUT2_MAX_temp, INPUT2_MID_temp);
-    HAL_Delay(5);
+    delay(5);
   }
 
   #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
@@ -633,7 +593,7 @@ void updateCurSpdLim(void) {
     readInputRaw();
     filtLowPass32(input1[inIdx].raw, FILTER, &input1_fixdt);
     filtLowPass32(input2[inIdx].raw, FILTER, &input2_fixdt);
-    HAL_Delay(5);
+    delay(5);
   }
   // Calculate scaling factors
   cur_factor = CLAMP((input1_fixdt - (input1[inIdx].min << 16)) / (input1[inIdx].max - input1[inIdx].min), 6553, 65535);    // ADC1, MIN_cur(10%) = 1.5 A 
@@ -742,12 +702,12 @@ void cruiseControl(uint8_t button) {
       rtP_Left.b_cruiseCtrlEna  = 1;
       rtP_Right.b_cruiseCtrlEna = 1;
       cruiseCtrlAcv = 1;
-      beepShortMany(2, 1);                                              // 200 ms beep delay. Acts as a debounce also.
+      beepShortMany(&buzzer, 2, 1);                                              // 200 ms beep delay. Acts as a debounce also.
     } else if (button && rtP_Left.b_cruiseCtrlEna && !standstillAcv) {  // Cruise control deactivated if no Standstill Hold is active
       rtP_Left.b_cruiseCtrlEna  = 0;
       rtP_Right.b_cruiseCtrlEna = 0;
       cruiseCtrlAcv = 0;
-      beepShortMany(2, -1);
+      beepShortMany(&buzzer, 2, -1);
     }
   #endif
 }
@@ -788,7 +748,7 @@ int checkInputType(int16_t min, int16_t mid, int16_t max){
       #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
       printf(" AND protected");
       #endif
-      beepLong(2); // Indicate protection by a beep
+      beepLong(&buzzer, 2); // Indicate protection by a beep
     }
     #endif
   }
@@ -1039,9 +999,9 @@ void handleTimeout(void) {
 
     // Beep in case of Input index change
     if (inIdx && !inIdx_prev) {                                         // rising edge
-      beepShort(8);
+      beepShort(&buzzer, 8);
     } else if (!inIdx && inIdx_prev) {                                  // falling edge
-      beepShort(18);
+      beepShort(&buzzer, 18);
     }
 }
 
@@ -1451,7 +1411,7 @@ void sideboardSensors(uint8_t sensors) {
           rtP_Left.z_ctrlTypSel = rtP_Right.z_ctrlTypSel = COM_CTRL;
           break;
       }
-      if (inIdx == inIdx_prev) { beepShortMany(sensor1_index + 1, 1); }
+      if (inIdx == inIdx_prev) { beepShortMany(&buzzer, sensor1_index + 1, 1); }
       if (++sensor1_index > 4) { sensor1_index = 0; }
     }
 
@@ -1489,7 +1449,7 @@ void sideboardSensors(uint8_t sensors) {
               Input_Lim_Init();
               break; 
           }
-          if (inIdx == inIdx_prev) { beepShortMany(sensor2_index + 1, 1); }
+          if (inIdx == inIdx_prev) { beepShortMany(&buzzer, sensor2_index + 1, 1); }
           if (++sensor2_index > 1) { sensor2_index = 0; }
         }
       #endif  // CRUISE_CONTROL_SUPPORT
@@ -1543,11 +1503,13 @@ void poweroff(void) {
   #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
   printf("-- Motors disabled --\r\n");
   #endif
-  buzzerCount = 0;  // prevent interraction with beep counter
-  buzzerPattern = 0;
+  buzzer.count = 0;  // prevent interraction with beep counter
+  buzzer.pattern = 0;
+
   for (int i = 0; i < 8; i++) {
-    buzzerFreq = (uint8_t)i;
-    HAL_Delay(100);
+    buzzer.pitch = (uint8_t)i;
+    
+    delay(100);
   }
   saveConfig();
   HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_RESET);
@@ -1560,24 +1522,24 @@ void poweroffPressCheck(void) {
     if(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
       uint16_t cnt_press = 0;
       while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
-        HAL_Delay(10);
-        if (cnt_press++ == 5 * 100) { beepShort(5); }
+        delay(10);
+        if (cnt_press++ == 5 * 100) { beepShort(&buzzer, 5); }
       }
 
       if (cnt_press > 8) enable = 0;
 
       if (cnt_press >= 5 * 100) {                         // Check if press is more than 5 sec
-        HAL_Delay(1000);
+        delay(1000);
         if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {  // Double press: Adjust Max Current, Max Speed
-          while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { HAL_Delay(10); }
-          beepLong(8);
+          while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { delay(10); }
+          beepLong(&buzzer, 8);
           updateCurSpdLim();
-          beepShort(5);
+          beepShort(&buzzer, 5);
         } else {                                          // Long press: Calibrate ADC Limits
           #ifdef AUTO_CALIBRATION_ENA
-          beepLong(16); 
+          beepLong(&buzzer, 16); 
           adcCalibLim();
-          beepShort(5);
+          beepShort(&buzzer, 5);
           #endif
         }
       } else if (cnt_press > 8) {                         // Short press: power off (80 ms debounce)
@@ -1590,20 +1552,20 @@ void poweroffPressCheck(void) {
   #elif defined(VARIANT_TRANSPOTTER)
     if(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
       enable = 0;
-      while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { HAL_Delay(10); }
-      beepShort(5);
-      HAL_Delay(300);
+      while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { delay(10); }
+      beepShort(&buzzer, 5);
+      delay(300);
       if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
-        while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { HAL_Delay(10); }
-        beepLong(5);
-        HAL_Delay(350);
+        while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { delay(10); }
+        beepLong(&buzzer, 5);
+        delay(350);
         poweroff();
       } else {
         setDistance += 0.25;
         if (setDistance > 2.6) {
           setDistance = 0.5;
         }
-        beepShort(setDistance / 0.25);
+        beepShort(&buzzer, setDistance / 0.25);
         saveValue = setDistance * 1000;
         saveValue_valid = 1;
       }

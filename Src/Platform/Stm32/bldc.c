@@ -27,6 +27,7 @@
 #include "setup.h"
 #include "config.h"
 #include "util.h"
+#include "buzzer.h"
 
 // Matlab includes and defines - from auto-code generation
 // ###############################################################################
@@ -58,12 +59,9 @@ volatile int pwmr = 0;
 
 extern volatile adc_buf_t adc_buffer;
 
-uint8_t buzzerFreq          = 0;
-uint8_t buzzerPattern       = 0;
-uint8_t buzzerCount         = 0;
+extern Buzzer buzzer;
+
 volatile uint32_t bldc_timer = 0;
-static uint8_t  buzzerPrev  = 0;
-static uint8_t  buzzerIdx   = 0;
 
 uint8_t        enable       = 0;        // initially motors are disabled for SAFETY
 static uint8_t enableFin    = 0;
@@ -132,19 +130,13 @@ void DMA1_Channel1_IRQHandler(void) {
 
   // Create square wave for buzzer
   bldc_timer++;
-  if (buzzerFreq != 0 && (bldc_timer / 5000) % (buzzerPattern + 1) == 0) {
-    if (buzzerPrev == 0) {
-      buzzerPrev = 1;
-      if (++buzzerIdx > (buzzerCount + 2)) {    // pause 2 periods
-        buzzerIdx = 1;
-      }
-    }
-    if (bldc_timer % buzzerFreq == 0 && (buzzerIdx <= buzzerCount || buzzerCount == 0)) {
+
+  BuzzerState buzzerState = get_buzzer_next_state(&buzzer, bldc_timer);
+  
+  if (buzzerState == BUZZER_TOGGLE) {
       HAL_GPIO_TogglePin(BUZZER_PORT, BUZZER_PIN);
-    }
-  } else if (buzzerPrev) {
+  } else if (buzzerState == BUZZER_OFF) {
       HAL_GPIO_WritePin(BUZZER_PORT, BUZZER_PIN, GPIO_PIN_RESET);
-      buzzerPrev = 0;
   }
 
   // Adjust pwm_margin depending on the selected Control Type
