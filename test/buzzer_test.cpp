@@ -3,6 +3,7 @@
 extern "C"
 {
 #include "buzzer.h"
+#include "platform.h"
 }
 
 #include <stdio.h>
@@ -13,6 +14,10 @@ extern "C"
 #include <algorithm>
 
 Buzzer buzzer;
+
+void delay(uint16_t ms) {
+    //do nothing
+}
 
 void setUp(void)
 {
@@ -36,9 +41,9 @@ uint32_t get_buzzer_state_on_count(uint8_t freq, uint8_t pattern, uint8_t count)
 
     for (uint32_t timer = 0; timer < 200000; timer++)
     {
-        unsigned char state = get_buzzer_next_state(&buzzer, timer);
+        set_buzzer_next_state(&buzzer, timer);
 
-        if (state == BUZZER_TOGGLE)
+        if (buzzer.state == BUZZER_TOGGLE)
         {
             togglesCount++;
         }

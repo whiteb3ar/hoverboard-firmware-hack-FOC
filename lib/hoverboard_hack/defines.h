@@ -56,7 +56,7 @@
 
 typedef struct {
   uint16_t dcr; 
-  uint16_t dcl; 
+  uint16_t dcl;
   uint16_t rlA;
   uint16_t rlB;
   uint16_t rrB;

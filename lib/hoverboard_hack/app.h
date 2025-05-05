@@ -158,19 +158,6 @@ typedef struct
   void (*reset)(void);
 } Hardware;
 
-typedef struct
-{
-  void (*set_disabled)(uint8_t disabled);
-  void (*read_hall)(uint8_t *values);
-  void (*set_pwm)(uint16_t u, uint16_t v, uint16_t w);
-} Motor;
-
-typedef struct
-{
-  void (*uart2_putchar)(char *);
-  void (*uart3_putchar)(char *);
-} Logger;
-
 extern uint16_t VirtAddVarTab[NB_OF_VAR];
 
 void main_bldc_irq_loop(void);

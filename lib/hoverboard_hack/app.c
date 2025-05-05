@@ -29,6 +29,7 @@
 #include "rtwtypes.h"
 #include "comms.h"
 #include "buzzer.h"
+#include "logger.h"
 #include "platform.h"
 
 #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
@@ -206,10 +207,8 @@ static uint8_t standstillAcv = 0;
 #endif
 PUTCHAR_PROTOTYPE
 {
-#if defined(DEBUG_SERIAL_USART2)
-	logger.uart2_putchar((char *)&ch);
-#elif defined(DEBUG_SERIAL_USART3)
-	logger.uart3_putchar((char *)&ch);
+#if defined(DEBUG_SERIAL_USART3)
+	logger.putchar((char *)&ch);
 #endif
 	return ch;
 }
@@ -380,7 +379,7 @@ void Input_Init(void)
 	delay(50);
 	lcd.pcf8574.PCF_I2C_ADDRESS = 0x27;
 	lcd.pcf8574.PCF_I2C_TIMEOUT = 5;
-	lcd.pcf8574.i2c = (void *)&hi2c2;
+	//lcd.pcf8574.i2c = (void *)&hi2c2;
 	lcd.NUMBER_OF_LINES = NUMBER_OF_LINES_2;
 	lcd.type = TYPE0;
 

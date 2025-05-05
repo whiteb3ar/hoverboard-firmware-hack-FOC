@@ -12,32 +12,33 @@ void buzzer_init(Buzzer *buzzer)
     buzzer->beepIndex = 0;
 }
 
-BuzzerState get_buzzer_next_state(Buzzer *buzzer, uint32_t timer)
+void set_buzzer_next_state(Buzzer *buzzer, uint32_t timer)
 {
     if (buzzer->pitch != 0 && (timer / buzzer->period) % (buzzer->pattern + 1) == 0)
     {
         if (buzzer->state == BUZZER_OFF)
         {
-            buzzer->state = BUZZER_ON;
+            buzzer->state = BUZZER_IDLE;
 
             if (++buzzer->beepIndex > (buzzer->count + 2))
             { // pause 2 periods
                 buzzer->beepIndex = 1;
             }
         }
+
         if (timer % buzzer->pitch == 0 && (buzzer->beepIndex <= buzzer->count || buzzer->count == 0))
         {
-            return BUZZER_TOGGLE;
+            buzzer->state = BUZZER_TOGGLE;
+        }
+        else
+        {
+            buzzer->state = BUZZER_IDLE;
         }
     }
-    else if (buzzer->state == BUZZER_ON)
+    else if (buzzer->state != BUZZER_OFF)
     {
         buzzer->state = BUZZER_OFF;
-
-        return BUZZER_OFF;
-    }
-
-    return BUZZER_IDLE;
+    }    
 }
 
 void poweronMelody(Buzzer *buzzer)

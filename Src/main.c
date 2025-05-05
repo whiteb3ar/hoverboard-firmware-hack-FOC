@@ -38,7 +38,7 @@
 #include "hd44780.h"
 #endif
 
-extern volatile adc_buf_t adc_buffer;
+volatile adc_buf_t adc_buffer;
 
 #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
 extern LCD_PCF8574_HandleTypeDef lcd;
@@ -71,8 +71,8 @@ extern volatile uint8_t timeoutFlgGen;	// Timeout Flag for the General timeout (
 extern uint8_t timeoutFlgADC;	 // Timeout Flag for for ADC Protection: 0 = OK, 1 = Problem detected (line disconnected or wrong ADC data)
 extern uint8_t timeoutFlgSerial; // Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
 
-extern volatile int pwml; // global variable for pwm left. -1000 to 1000
-extern volatile int pwmr; // global variable for pwm right. -1000 to 1000
+volatile int pwml = 0; // global variable for pwm left. -1000 to 1000
+volatile int pwmr = 0; // global variable for pwm right. -1000 to 1000
 
 extern uint8_t enable;	   // global variable for motor enable
 extern int16_t batVoltage; // global variable for battery voltage
@@ -222,6 +222,8 @@ int main(void)
 	// Loop until button is released
 	while (hardware.is_button_pressed())
 	{
+		hardware.reset_watchdog();
+
 		delay(10);
 	}
 
@@ -233,6 +235,13 @@ int main(void)
 		delay(10);
 	}
 #endif
+
+while (1)
+{
+	delay(1000);
+
+	printf("Test message --\r\n");
+}
 
 	while (1)
 	{

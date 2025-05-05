@@ -23,10 +23,11 @@
  */
 
 #include "defines.h"
-#include "setup.h"
+//#include "setup.h"
 #include "config.h"
 #include "app.h"
 #include "buzzer.h"
+#include "motor.h"
 
 // Matlab includes and defines - from auto-code generation
 // ###############################################################################
@@ -46,24 +47,23 @@ extern ExtU rtU_Right; /* External inputs */
 extern ExtY rtY_Right; /* External outputs */
 // ###############################################################################
 
-static int16_t pwm_margin; /* This margin allows to have a window in the PWM signal for proper FOC Phase currents measurement */
-
 extern uint8_t ctrlModReq;
-static int16_t curDC_max = (I_DC_MAX * A2BIT_CONV);
-int16_t curL_phaA = 0, curL_phaB = 0, curL_DC = 0;
-int16_t curR_phaB = 0, curR_phaC = 0, curR_DC = 0;
 
-volatile int pwml = 0;
-volatile int pwmr = 0;
-
+extern volatile int pwml;
+extern volatile int pwmr;
 extern volatile adc_buf_t adc_buffer;
 
 extern Hardware hardware;
-
 extern Buzzer buzzer;
 
 extern Motor motor_left;
 extern Motor motor_right;
+
+
+static int16_t pwm_margin; /* This margin allows to have a window in the PWM signal for proper FOC Phase currents measurement */
+static int16_t curDC_max = (I_DC_MAX * A2BIT_CONV);
+int16_t curL_phaA = 0, curL_phaB = 0, curL_DC = 0;
+int16_t curR_phaB = 0, curR_phaC = 0, curR_DC = 0;
 
 volatile uint32_t bldc_timer = 0;
 
@@ -85,15 +85,31 @@ static int32_t batVoltageFixdt = (400 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_R
 
 void main_bldc_irq_loop()
 {
+  bldc_timer++;
+
+  set_buzzer_next_state(&buzzer, bldc_timer);
+
+  if (buzzer.state == BUZZER_TOGGLE)
+  {
+    hardware.toggle_buzzer();
+  }
+  else if (buzzer.state == BUZZER_OFF)
+  {
+    hardware.switch_buzzer_off();
+  }
+  return;
+  
   if (offsetcount < 2000)
   { // calibrate ADC offsets
     offsetcount++;
+
     offsetrlA = (adc_buffer.rlA + offsetrlA) / 2;
     offsetrlB = (adc_buffer.rlB + offsetrlB) / 2;
     offsetrrB = (adc_buffer.rrB + offsetrrB) / 2;
     offsetrrC = (adc_buffer.rrC + offsetrrC) / 2;
     offsetdcl = (adc_buffer.dcl + offsetdcl) / 2;
     offsetdcr = (adc_buffer.dcr + offsetdcr) / 2;
+
     return;
   }
 
@@ -121,13 +137,13 @@ void main_bldc_irq_loop()
   // Create square wave for buzzer
   bldc_timer++;
 
-  BuzzerState buzzerState = get_buzzer_next_state(&buzzer, bldc_timer);
+  set_buzzer_next_state(&buzzer, bldc_timer);
 
-  if (buzzerState == BUZZER_TOGGLE)
+  if (buzzer.state == BUZZER_TOGGLE)
   {
     hardware.toggle_buzzer();
   }
-  else if (buzzerState == BUZZER_OFF)
+  else if (buzzer.state == BUZZER_OFF)
   {
     hardware.switch_buzzer_off();
   }
@@ -143,9 +159,6 @@ void main_bldc_irq_loop()
   }
 
   // ############################### MOTOR CONTROL ###############################
-
-  int ul, vl, wl;
-  int ur, vr, wr;
   static boolean_T OverrunFlag = false;
 
   /* Check for overrun */
@@ -162,16 +175,16 @@ void main_bldc_irq_loop()
   // ========================= LEFT MOTOR ============================
   // Get hall sensors values
 
-  uint8_t left_hall[3];
-  motor_left.read_hall(left_hall);
+  hall_state_t left_hall;
+  motor_left.read_hall(&left_hall);
 
   /* Set motor inputs here */
   rtU_Left.b_motEna = enableFin;
   rtU_Left.z_ctrlModReq = ctrlModReq;
   rtU_Left.r_inpTgt = pwml;
-  rtU_Left.b_hallA = left_hall[0];
-  rtU_Left.b_hallB = left_hall[1];
-  rtU_Left.b_hallC = left_hall[2];
+  rtU_Left.b_hallA = left_hall.u;
+  rtU_Left.b_hallB = left_hall.v;
+  rtU_Left.b_hallC = left_hall.w;
   rtU_Left.i_phaAB = curL_phaA;
   rtU_Left.i_phaBC = curL_phaB;
   rtU_Left.i_DCLink = curL_DC;
@@ -183,32 +196,35 @@ void main_bldc_irq_loop()
 #endif
 
   /* Get motor outputs here */
-  ul = rtY_Left.DC_phaA;
-  vl = rtY_Left.DC_phaB;
-  wl = rtY_Left.DC_phaC;
+  int ul = rtY_Left.DC_phaA;
+  int vl = rtY_Left.DC_phaB;
+  int wl = rtY_Left.DC_phaC;
   // errCodeLeft  = rtY_Left.z_errCode;
   // motSpeedLeft = rtY_Left.n_mot;
   // motAngleLeft = rtY_Left.a_elecAngle;
 
   /* Apply commands */
-  motor_left.set_pwm(
-      (uint16_t)CLAMP(ul + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
-      (uint16_t)CLAMP(vl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
-      (uint16_t)CLAMP(wl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin));
+  pwm_output_t left_pwm;
+
+  left_pwm.u = (uint16_t)CLAMP(ul + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
+  left_pwm.v = (uint16_t)CLAMP(vl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
+  left_pwm.w = (uint16_t)CLAMP(wl + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
+
+  motor_left.set_pwm(&left_pwm);
   // =================================================================
 
   // ========================= RIGHT MOTOR ===========================
   // Get hall sensors values
-  uint8_t right_hall[3];
-  motor_right.read_hall(right_hall);
+  hall_state_t right_hall;
+  motor_right.read_hall(&right_hall);
 
   /* Set motor inputs here */
   rtU_Right.b_motEna = enableFin;
   rtU_Right.z_ctrlModReq = ctrlModReq;
   rtU_Right.r_inpTgt = pwmr;
-  rtU_Right.b_hallA = right_hall[0];
-  rtU_Right.b_hallB = right_hall[1];
-  rtU_Right.b_hallC = right_hall[2];
+  rtU_Right.b_hallA = right_hall.u;
+  rtU_Right.b_hallB = right_hall.v;
+  rtU_Right.b_hallC = right_hall.w;
   rtU_Right.i_phaAB = curR_phaB;
   rtU_Right.i_phaBC = curR_phaC;
   rtU_Right.i_DCLink = curR_DC;
@@ -220,18 +236,21 @@ void main_bldc_irq_loop()
 #endif
 
   /* Get motor outputs here */
-  ur = rtY_Right.DC_phaA;
-  vr = rtY_Right.DC_phaB;
-  wr = rtY_Right.DC_phaC;
+  int ur = rtY_Right.DC_phaA;
+  int vr = rtY_Right.DC_phaB;
+  int wr = rtY_Right.DC_phaC;
   // errCodeRight  = rtY_Right.z_errCode;
   // motSpeedRight = rtY_Right.n_mot;
   // motAngleRight = rtY_Right.a_elecAngle;
 
   /* Apply commands */
-  motor_right.set_pwm(
-      (uint16_t)CLAMP(ur + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
-      (uint16_t)CLAMP(vr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin),
-      (uint16_t)CLAMP(wr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin));
+  pwm_output_t right_pwm;
+
+  right_pwm.u = (uint16_t)CLAMP(ur + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
+  right_pwm.v = (uint16_t)CLAMP(vr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
+  right_pwm.w = (uint16_t)CLAMP(wr + pwm_res / 2, pwm_margin, pwm_res - pwm_margin);
+
+  motor_right.set_pwm(&right_pwm);
   // =================================================================
 
   /* Indicate task complete */

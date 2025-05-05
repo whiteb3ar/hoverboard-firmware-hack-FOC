@@ -1,19 +1,10 @@
-#ifndef BUZZER_H
-// #define BUZZER_H
-
-// #include "defines.h"
-#include <stdint.h>
-
-// #ifndef BUZZER_H
-#define BUZZER_H
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
 
 typedef enum {
     BUZZER_OFF,
-    BUZZER_ON,
-
     BUZZER_IDLE,
     BUZZER_TOGGLE
 } BuzzerState;
@@ -51,6 +42,4 @@ void beepLong(Buzzer *buzzer, uint8_t pitch);
 void beepShort(Buzzer *buzzer, uint8_t pitch);
 void beepShortMany(Buzzer *buzzer, uint8_t count, int8_t direction);
 
-BuzzerState get_buzzer_next_state(Buzzer* buzzer, uint32_t timer);
-
-#endif // BUZZER_H
+void set_buzzer_next_state(Buzzer* buzzer, uint32_t timer);
