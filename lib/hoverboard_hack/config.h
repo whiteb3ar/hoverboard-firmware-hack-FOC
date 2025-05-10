@@ -46,7 +46,11 @@
 
 // This settings influences the actual sample-time. Only use definitions above
 // This parameter needs to be the same as the ADC conversion for Current Phase of the FIRST Motor in setup.c
+
+// ADC Total conversion time: this will be used to offset TIM8 in advance of TIM1 to align the Phase current ADC measurement
+// This parameter is used in setup.c
 #define ADC_CONV_CLOCK_CYCLES   (ADC_CONV_TIME_7C5)
+#define ADC_PHASE_CURRENT_CONVERSION_CYCLE_COUNT   (ADC_CONV_CLOCK_CYCLES)
 
 // Set the configured ADC divider. This parameter needs to be the same ADC divider as PeriphClkInit.AdcClockSelection (see main.c)
 #define ADC_CLOCK_DIV           (4)

@@ -2,8 +2,8 @@
 #include "app.h"
 #include "board.h"
 #include "config.h"
-
 #include <platform.h>
+#include "oscilloscope.h"
 
 uint32_t msTicks;
 uint32_t timeoutCounter_ms = 0;
@@ -67,20 +67,22 @@ void TIMER0_BRK_IRQHandler(void)
 	timer_interrupt_flag_clear(RCU_TIMER0, TIMER_INT_UP);
 }
 
-extern uint32_t steerCounter;								// Steer counter for setting update rate
-
-//----------------------------------------------------------------------------
-// This function handles DMA_Channel0_IRQHandler interrupt
-// Is called, when the ADC scan sequence is finished
-// -> ADC is triggered from timer0-update-interrupt -> every 31,25us
-//----------------------------------------------------------------------------
-void DMA_Channel0_IRQHandler(void)
+void DMA0_Channel0_IRQHandler(void)
 {
-	main_bldc_irq_loop();
-	
 	if (dma_interrupt_flag_get(DMA0, DMA_CH0, DMA_INT_FLAG_FTF))
 	{
+		uint16_t debugTime = timer_counter_read(TIMER3);
+		oscilloscope_update(&oscilloscope, OSCILLOSCOPE_GENERAL_TEMPERATURE_ADC_READY, debugTime, 1);
+
 		dma_interrupt_flag_clear(DMA0, DMA_CH0, DMA_INT_FLAG_FTF);        
+	}
+}
+
+void DMA0_Channel1_IRQHandler(void)
+{
+	if (dma_interrupt_flag_get(DMA0, DMA_CH1, DMA_INT_FLAG_FTF))
+	{
+		dma_interrupt_flag_clear(DMA0, DMA_CH1, DMA_INT_FLAG_FTF);        
 	}
 }
 
@@ -94,6 +96,93 @@ void USART3_IRQHandler(void) {
 		usart_interrupt_flag_clear(USART0, USART_INT_FLAG_IDLE);
 
 		board_usart1_rx_check();
+	}
+}
+
+#include "defines.h"
+
+volatile uint8_t adc1_inserted_ready = false;
+volatile uint8_t adc3_regular_ready = false;
+
+volatile uint16_t motor_1_dc_link_current;
+volatile uint16_t motor_2_dc_link_current;
+volatile uint16_t motor_1_phase_current_A;
+volatile uint16_t motor_2_phase_current_B;
+volatile uint16_t motor_1_phase_current_B;
+volatile uint16_t motor_2_phase_current_C;
+
+extern volatile adc_buf_t adc_buffer;
+
+void Try_ADC_Ready()
+{
+	if (!adc1_inserted_ready || !adc3_regular_ready) {
+		return;
+	}
+	
+	adc_buffer.dcl = motor_1_dc_link_current;
+	adc_buffer.dcr = motor_2_dc_link_current;
+	adc_buffer.rlA = motor_1_phase_current_A;
+	adc_buffer.rlB = motor_1_phase_current_B;
+	adc_buffer.rrB = motor_2_phase_current_B;
+	adc_buffer.rrC = motor_2_phase_current_C;
+	adc_buffer.batt1 = motor_1_dc_link_current;
+	adc_buffer.l_tx2 = motor_1_dc_link_current;
+	adc_buffer.temp = motor_1_dc_link_current;
+	adc_buffer.l_rx2 = motor_1_dc_link_current;
+
+	adc1_inserted_ready = false;
+	adc3_regular_ready = false;
+
+	//main_bldc_irq_loop();
+
+	uint16_t debugTime = timer_counter_read(TIMER3);
+	oscilloscope_update(&oscilloscope, OSCILLOSCOPE_MAIN_BLDC_LOOP, debugTime, 1);
+}
+
+void ADC0_1_IRQHandler(void)
+{
+	if(adc_flag_get(ADC0, ADC_FLAG_EOIC)) {
+        adc_flag_clear(ADC0, ADC_FLAG_EOIC);
+
+		if (adc1_inserted_ready) {
+			//todo: bad_timing overrun error
+		}
+
+		adc1_inserted_ready = true;
+
+		uint16_t debugTime = timer_counter_read(TIMER3);
+		oscilloscope_update(&oscilloscope, OSCILLOSCOPE_PHASE_CURRENTs_ADC_READY, debugTime, 1);
+
+        motor_1_phase_current_A = adc_inserted_data_read(ADC0, ADC_INSERTED_CHANNEL_0);
+        motor_2_phase_current_B = adc_inserted_data_read(ADC0, ADC_INSERTED_CHANNEL_1);
+		motor_1_phase_current_B = adc_inserted_data_read(ADC1, ADC_INSERTED_CHANNEL_0);
+        motor_2_phase_current_C = adc_inserted_data_read(ADC1, ADC_INSERTED_CHANNEL_1);
+        
+		Try_ADC_Ready();
+    }
+}
+
+void DMA0_Channel2_IRQHandler(void)
+{
+	if (dma_interrupt_flag_get(DMA0, DMA_CH2, DMA_INT_FLAG_FTF))
+	{
+		dma_interrupt_flag_clear(DMA0, DMA_CH2, DMA_INT_FLAG_FTF);
+
+		if (adc3_regular_ready) {
+			//todo: bad_timing overrun error
+		}
+
+		adc3_regular_ready = true;
+
+		uint16_t debugTime = timer_counter_read(TIMER3);
+		oscilloscope_update(&oscilloscope, OSCILLOSCOPE_DC_LINK_ADC_READY, debugTime, 1);
+
+		uint16_t* base_address = DMA_CHMADDR(DMA0, DMA_CH2);
+
+		motor_1_dc_link_current = base_address[0];
+		motor_2_dc_link_current = base_address[1];
+
+		Try_ADC_Ready();
 	}
 }
 
@@ -163,7 +252,7 @@ uint32_t millis()
 }
 
 //----------------------------------------------------------------------------
-// Delays number of tick Systicks (happens every 10 ms)
+// Delays number of tick Systicks (happens every 1 ms)
 //----------------------------------------------------------------------------
 void Delay (uint32_t dlyTicks)
 {

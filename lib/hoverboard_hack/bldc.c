@@ -80,9 +80,6 @@ static int16_t offsetrrC = 2000;
 static int16_t offsetdcl = 2000;
 static int16_t offsetdcr = 2000;
 
-int16_t batVoltage = (400 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE;
-static int32_t batVoltageFixdt = (400 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE << 16; // Fixed-point filter output initialized at 400 V*100/cell = 4 V/cell converted to fixed-point
-
 void main_bldc_irq_loop()
 {
   bldc_timer++;
@@ -111,12 +108,6 @@ void main_bldc_irq_loop()
     offsetdcr = (adc_buffer.dcr + offsetdcr) / 2;
 
     return;
-  }
-
-  if (bldc_timer % 1000 == 0)
-  { // Filter battery voltage at a slower sampling rate
-    filtLowPass32(adc_buffer.batt1, BAT_FILT_COEF, &batVoltageFixdt);
-    batVoltage = (int16_t)(batVoltageFixdt >> 16); // convert fixed-point to integer
   }
 
   // Get Left motor currents
