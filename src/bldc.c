@@ -68,8 +68,6 @@ static uint8_t  buzzerIdx   = 0;
 uint8_t        enable       = 0;        // initially motors are disabled for SAFETY
 static uint8_t enableFin    = 0;
 
-static const uint16_t pwm_res  = 64000000 / 2 / PWM_FREQ; // = 2000
-
 static uint16_t offsetcount = 0;
 static int16_t offsetrlA    = 2000;
 static int16_t offsetrlB    = 2000;
@@ -188,9 +186,9 @@ void DMA1_Channel1_IRQHandler(void) {
     // rtU_Left.a_mechAngle   = ...; // Angle input in DEGREES [0,360] in fixdt(1,16,4) data type. If `angle` is float use `= (int16_t)floor(angle * 16.0F)` If `angle` is integer use `= (int16_t)(angle << 4)`
     
     /* Step the controller */
-    #ifdef MOTOR_LEFT_ENA    
-    BLDC_controller_step(rtM_Left);
-    #endif
+    if (MOTOR_LEFT_ENA) {
+      BLDC_controller_step(rtM_Left);
+    }
 
     /* Get motor outputs here */
     ul            = rtY_Left.DC_phaA;
@@ -201,9 +199,9 @@ void DMA1_Channel1_IRQHandler(void) {
   // motAngleLeft = rtY_Left.a_elecAngle;
 
     /* Apply commands */
-    LEFT_TIM->LEFT_TIM_U    = (uint16_t)CLAMP(ul + pwm_res / 2, pwm_margin, pwm_res-pwm_margin);
-    LEFT_TIM->LEFT_TIM_V    = (uint16_t)CLAMP(vl + pwm_res / 2, pwm_margin, pwm_res-pwm_margin);
-    LEFT_TIM->LEFT_TIM_W    = (uint16_t)CLAMP(wl + pwm_res / 2, pwm_margin, pwm_res-pwm_margin);
+    LEFT_TIM->LEFT_TIM_U    = (uint16_t)CLAMP(ul + PWM_RES / 2, pwm_margin, PWM_RES-pwm_margin);
+    LEFT_TIM->LEFT_TIM_V    = (uint16_t)CLAMP(vl + PWM_RES / 2, pwm_margin, PWM_RES-pwm_margin);
+    LEFT_TIM->LEFT_TIM_W    = (uint16_t)CLAMP(wl + PWM_RES / 2, pwm_margin, PWM_RES-pwm_margin);
   // =================================================================
   
 
@@ -226,9 +224,9 @@ void DMA1_Channel1_IRQHandler(void) {
     // rtU_Right.a_mechAngle   = ...; // Angle input in DEGREES [0,360] in fixdt(1,16,4) data type. If `angle` is float use `= (int16_t)floor(angle * 16.0F)` If `angle` is integer use `= (int16_t)(angle << 4)`
     
     /* Step the controller */
-    #ifdef MOTOR_RIGHT_ENA
-    BLDC_controller_step(rtM_Right);
-    #endif
+    if (MOTOR_RIGHT_ENA) {
+      BLDC_controller_step(rtM_Right);
+    }
 
     /* Get motor outputs here */
     ur            = rtY_Right.DC_phaA;
@@ -239,9 +237,9 @@ void DMA1_Channel1_IRQHandler(void) {
  // motAngleRight = rtY_Right.a_elecAngle;
 
     /* Apply commands */
-    RIGHT_TIM->RIGHT_TIM_U  = (uint16_t)CLAMP(ur + pwm_res / 2, pwm_margin, pwm_res-pwm_margin);
-    RIGHT_TIM->RIGHT_TIM_V  = (uint16_t)CLAMP(vr + pwm_res / 2, pwm_margin, pwm_res-pwm_margin);
-    RIGHT_TIM->RIGHT_TIM_W  = (uint16_t)CLAMP(wr + pwm_res / 2, pwm_margin, pwm_res-pwm_margin);
+    RIGHT_TIM->RIGHT_TIM_U  = (uint16_t)CLAMP(ur + PWM_RES / 2, pwm_margin, PWM_RES-pwm_margin);
+    RIGHT_TIM->RIGHT_TIM_V  = (uint16_t)CLAMP(vr + PWM_RES / 2, pwm_margin, PWM_RES-pwm_margin);
+    RIGHT_TIM->RIGHT_TIM_W  = (uint16_t)CLAMP(wr + PWM_RES / 2, pwm_margin, PWM_RES-pwm_margin);
   // =================================================================
 
   /* Indicate task complete */

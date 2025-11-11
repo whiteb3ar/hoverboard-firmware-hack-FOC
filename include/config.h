@@ -2,7 +2,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "stm32f1xx_hal.h"
+#include <stdint.h>
 
 // ############################### VARIANT SELECTION ###############################
 // PlatformIO: uncomment desired variant in platformio.ini
@@ -23,10 +23,19 @@
 #endif
 // ########################### END OF VARIANT SELECTION ############################
 
+/**
+ * Initializes default parameters 
+ */
+void initialize_config();
 
 // ############################### DO-NOT-TOUCH SETTINGS ###############################
-#define PWM_FREQ            16000     // PWM frequency in Hz / is also used for buzzer
-#define DEAD_TIME              48     // PWM deadtime
+//#define PWM_FREQ            16000     // PWM frequency in Hz / is also used for buzzer
+extern uint32_t PWM_FREQ; // PWM frequency in Hz / is also used for buzzer
+extern uint32_t PWM_RES;
+
+//#define DEAD_TIME              48     // PWM deadtime
+extern uint32_t DEAD_TIME; // PWM deadtime
+
 #ifdef VARIANT_TRANSPOTTER
   #define DELAY_IN_MAIN_LOOP    2
 #else
@@ -142,9 +151,12 @@
 #define SPD_MODE        2               // [-] SPEED mode
 #define TRQ_MODE        3               // [-] TORQUE mode
 
-// Enable/Disable Motor
-#define MOTOR_LEFT_ENA                  // [-] Enable LEFT motor.  Comment-out if this motor is not needed to be operational
-#define MOTOR_RIGHT_ENA                 // [-] Enable RIGHT motor. Comment-out if this motor is not needed to be operational
+// Enable/Disable Motor (runtime-configurable)
+// Previously these were compile-time feature macros. They are now runtime
+// variables so the enabled state can be inspected/changed at runtime.
+// A single definition (non-extern) must exist in one C file (see src/config.c).
+extern uint8_t MOTOR_LEFT_ENA;   // 1 = enabled, 0 = disabled
+extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
 
 // Control selections
 #define CTRL_TYP_SEL    FOC_CTRL        // [-] Control type selection: COM_CTRL, SIN_CTRL, FOC_CTRL (default)

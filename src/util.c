@@ -461,25 +461,25 @@ void beepShortMany(uint8_t cnt, int8_t dir) {
 void calcAvgSpeed(void) {
     // Calculate measured average speed. The minus sign (-) is because motors spin in opposite directions
     speedAvg = 0;
-    #if defined(MOTOR_LEFT_ENA)
+    if (MOTOR_LEFT_ENA) {
       #if defined(INVERT_L_DIRECTION)
         speedAvg -= rtY_Left.n_mot;
       #else
         speedAvg += rtY_Left.n_mot;
       #endif
-    #endif
-    #if defined(MOTOR_RIGHT_ENA)
+    }
+    if (MOTOR_RIGHT_ENA) {
       #if defined(INVERT_R_DIRECTION)
         speedAvg += rtY_Right.n_mot;
       #else
         speedAvg -= rtY_Right.n_mot;
       #endif
 
-      // Average only if both motors are enabled
-      #if defined(MOTOR_LEFT_ENA)
+      /* Average only if both motors are enabled at runtime */
+      if (MOTOR_LEFT_ENA) {
         speedAvg /= 2;
-      #endif  
-    #endif
+      }
+    }
 
     // Handle the case when SPEED_COEFFICIENT sign is negative (which is when most significant bit is 1)
     if (SPEED_COEFFICIENT & (1 << 16)) {

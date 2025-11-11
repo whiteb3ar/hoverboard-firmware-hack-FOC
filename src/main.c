@@ -67,6 +67,9 @@ int main(void) {
   BLDC_Init();        // BLDC Controller Init
 
   HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_SET);   // Activate Latch
+
+  initialize_config();
+
   Input_Lim_Init();   // Input Limitations Init
   Input_Init();       // Input Init
 
