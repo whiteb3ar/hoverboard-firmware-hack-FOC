@@ -31,6 +31,7 @@
 #include "hal/hal.h"
 #include "rtwtypes.h"
 #include "comms.h"
+#include "logger.h"
 
 //if (DEBUG_I2C_LCD || SUPPORT_LCD) {
 #include "hd44780.h"
@@ -210,7 +211,7 @@ static uint8_t standstillAcv = 0;
 
 /* =========================== Retargeting printf =========================== */
 /* retarget the C library printf function to the USART */
-//if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
+//if (1DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
   #ifdef __GNUC__
     #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
   #else
@@ -337,9 +338,7 @@ void Input_Init(void) {
     EE_Init();            /* EEPROM Init */
     EE_ReadVariable(VirtAddVarTab[0], &writeCheck);
     if (writeCheck == FLASH_WRITE_KEY) {
-      if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-        printf("Using the configuration from EEprom\r\n");
-      }
+      LOG("Using the configuration from EEprom\r\n");
 
       EE_ReadVariable(VirtAddVarTab[1] , &readVal); rtP_Left.i_max = rtP_Right.i_max = (int16_t)readVal;
       EE_ReadVariable(VirtAddVarTab[2] , &readVal); rtP_Left.n_max = rtP_Right.n_max = (int16_t)readVal;
@@ -358,9 +357,7 @@ void Input_Init(void) {
           input2[i].typ, input2[i].min, input2[i].mid, input2[i].max);
       }
     } else {
-      if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-        printf("Using the configuration from config.h\r\n");
-      }
+        LOG("Using the configuration from config.h\r\n");
 
       for (uint8_t i=0; i<INPUTS_NR; i++) {
         if (input1[i].typDef == 3) {  // If Input type defined is 3 (auto), identify the input type based on the values from config.h
@@ -538,9 +535,7 @@ if (AUTO_CALIBRATION_ENA) {
 
 if (CONTROL_VARIANT != VARIANT_HOVERBOARD && CONTROL_VARIANT != VARIANT_TRANSPOTTER) {
 
-  if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-  printf("Input calibration started...\r\n");
-  }
+  LOG("Input calibration started...\r\n");
 
   readInputRaw();
   // Inititalization: MIN = a high value, MAX = a low value
@@ -576,34 +571,24 @@ if (CONTROL_VARIANT != VARIANT_HOVERBOARD && CONTROL_VARIANT != VARIANT_TRANSPOT
     hal_delay(5);
   }
 
-  if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-  printf("Input1 is ");
-  }
+  LOG("Input1 is ");
+
   uint8_t input1TypTemp = checkInputType(INPUT1_MIN_temp, INPUT1_MID_temp, INPUT1_MAX_temp);
   if (input1TypTemp == input1[inIdx].typDef || input1[inIdx].typDef == 3) {  // Accept calibration only if the type is correct OR type was set to 3 (auto)
-    if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-    printf("..OK\r\n");
-    }
+    LOG("..OK\r\n");
   } else {
     input1TypTemp = 0; // Disable input
-    if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-    printf("..NOK\r\n");
-    }
+    LOG("..NOK\r\n");
   }
 
-  if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-  printf("Input2 is ");
-  }
+  LOG("Input2 is ");
+
   uint8_t input2TypTemp = checkInputType(INPUT2_MIN_temp, INPUT2_MID_temp, INPUT2_MAX_temp);
   if (input2TypTemp == input2[inIdx].typDef || input2[inIdx].typDef == 3) {  // Accept calibration only if the type is correct OR type was set to 3 (auto)
-    if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-    printf("..OK\r\n");
-    }
+    LOG("..OK\r\n");
   } else {
     input2TypTemp = 0; // Disable input
-    if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-    printf("..NOK\r\n");
-    }
+    LOG("..NOK\r\n");
   }
 
 
@@ -620,15 +605,11 @@ if (CONTROL_VARIANT != VARIANT_HOVERBOARD && CONTROL_VARIANT != VARIANT_TRANSPOT
     input2[inIdx].max = INPUT2_MAX_temp - input_margin;
 
     inp_cal_valid = 1;    // Mark calibration to be saved in Flash at shutdown
-    if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-    printf("Limits Input1: TYP:%i MIN:%i MID:%i MAX:%i\r\nLimits Input2: TYP:%i MIN:%i MID:%i MAX:%i\r\n",
+    LOG("Limits Input1: TYP:%i MIN:%i MID:%i MAX:%i\r\nLimits Input2: TYP:%i MIN:%i MID:%i MAX:%i\r\n",
             input1[inIdx].typ, input1[inIdx].min, input1[inIdx].mid, input1[inIdx].max,
             input2[inIdx].typ, input2[inIdx].min, input2[inIdx].mid, input2[inIdx].max);
-    }
   }else{
-    if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-    printf("Both inputs cannot be ignored, calibration rejected.\r\n");
-    }
+    LOG("Both inputs cannot be ignored, calibration rejected.\r\n");
   }
 
 }
@@ -649,9 +630,7 @@ void updateCurSpdLim(void) {
 
 if (CONTROL_VARIANT != VARIANT_HOVERBOARD && CONTROL_VARIANT != VARIANT_TRANSPOTTER) {
 
-  if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-  printf("Torque and Speed limits update started...\r\n");
-  }
+  LOG("Torque and Speed limits update started...\r\n");
 
   int32_t  input1_fixdt = input1[inIdx].raw << 16;
   int32_t  input2_fixdt = input2[inIdx].raw << 16;
@@ -683,12 +662,9 @@ if (CONTROL_VARIANT != VARIANT_HOVERBOARD && CONTROL_VARIANT != VARIANT_TRANSPOT
     cur_spd_valid  += 2;  // Mark update to be saved in Flash at shutdown
   }
 
-  if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
   // cur_spd_valid: 0 = No limit changed, 1 = Current limit changed, 2 = Speed limit changed, 3 = Both limits changed
-  printf("Limits (%i)\r\nCurrent: fixdt:%li factor%i i_max:%i \r\nSpeed: fixdt:%li factor:%i n_max:%i\r\n",
+  LOG("Limits (%i)\r\nCurrent: fixdt:%li factor%i i_max:%i \r\nSpeed: fixdt:%li factor:%i n_max:%i\r\n",
           cur_spd_valid, input1_fixdt, cur_factor, rtP_Left.i_max, input2_fixdt, spd_factor, rtP_Left.n_max);
-  }
-
 }
 }
 
@@ -801,27 +777,19 @@ int checkInputType(int16_t min, int16_t mid, int16_t max){
 
   if ((min / threshold) == (max / threshold) || (mid / threshold) == (max / threshold) || min > max || mid > max) {
     type = 0;
-    if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-    printf("ignored");                // (MIN and MAX) OR (MID and MAX) are close, disable input
-    }
+    LOG("ignored");                // (MIN and MAX) OR (MID and MAX) are close, disable input
   } else {
     if ((min / threshold) == (mid / threshold)){
       type = 1;
-      if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-      printf("a normal pot");        // MIN and MID are close, it's a normal pot
-      }
+      LOG("a normal pot");        // MIN and MID are close, it's a normal pot
     } else {
       type = 2;
-      if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-      printf("a mid-resting pot");   // it's a mid resting pot
-      }
+      LOG("a mid-resting pot");   // it's a mid resting pot
     }
 
     if (CONTROL_ADC_ENABLED) {
     if ((min + ADC_MARGIN - ADC_PROTECT_THRESH) > 0 && (max - ADC_MARGIN + ADC_PROTECT_THRESH) < 4095) {
-      if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-      printf(" AND protected");
-      }
+      LOG(" AND protected");
       beepLong(2); // Indicate protection by a beep
     }
     }
@@ -1267,7 +1235,7 @@ void usart3_rx_check(void)
 /*
  * Process Rx debug user command input
  */
-//if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
+//if (1DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
 void usart_process_debug(uint8_t *userCommand, uint32_t len)
 {
   if (DEBUG_SERIAL_PROTOCOL) {
@@ -1553,9 +1521,7 @@ void saveConfig() {
   }
   if (CONTROL_VARIANT != VARIANT_HOVERBOARD && CONTROL_VARIANT != VARIANT_TRANSPOTTER) {
     if (inp_cal_valid || cur_spd_valid) {
-      if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-        printf("Saving configuration to EEprom\r\n");
-      }
+        LOG("Saving configuration to EEprom\r\n");
 
       HAL_FLASH_Unlock();
       EE_WriteVariable(VirtAddVarTab[0] , (uint16_t)FLASH_WRITE_KEY);
@@ -1579,9 +1545,7 @@ void saveConfig() {
 
 void poweroff(void) {
   enable = 0;
-  if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-  printf("-- Motors disabled --\r\n");
-  }
+  LOG("-- Motors disabled --\r\n");
   buzzerCount = 0;  // prevent interraction with beep counter
   buzzerPattern = 0;
   for (int i = 0; i < 8; i++) {
@@ -1620,10 +1584,8 @@ void poweroffPressCheck(void) {
           }
         }
       } else if (cnt_press > 8) {                         // Short press: power off (80 ms debounce)
-        if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
-          printf("Powering off, button has been pressed\r\n");
-        }
-      poweroff();
+        LOG("Powering off, button has been pressed\r\n");
+        poweroff();
       }
     }
   } else if (CONTROL_VARIANT == VARIANT_TRANSPOTTER) {
