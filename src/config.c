@@ -97,4 +97,151 @@ void initialize_config() {
     PWM_RES  = 64000000 / 2 / PWM_FREQ; // = 2000
 
     DEAD_TIME = 48;
+
+// ############################### VALIDATE SETTINGS ###############################
+    if (CONTROL_VARIANT != VARIANT_ADC
+            && CONTROL_VARIANT != VARIANT_USART
+                && CONTROL_VARIANT != VARIANT_NUNCHUK
+                    && CONTROL_VARIANT != VARIANT_PPM
+                        && CONTROL_VARIANT != VARIANT_PWM
+                            && CONTROL_VARIANT != VARIANT_IBUS
+                                && CONTROL_VARIANT != VARIANT_HOVERCAR
+                                    && CONTROL_VARIANT != VARIANT_HOVERBOARD
+                                        && CONTROL_VARIANT != VARIANT_TRANSPOTTER
+                                            && CONTROL_VARIANT != VARIANT_SKATEBOARD) {
+        //#error Variant not defined! Please check platformio.ini or Inc/config.h for available variants.
+        while (1) {  }
+    }
+
+    // General checks
+    if (CONTROL_SERIAL_USART2_ENABLED && SIDEBOARD_SERIAL_USART2_ENABLED) {
+        //#error CONTROL_SERIAL_USART2_ENABLED and SIDEBOARD_SERIAL_USART2_ENABLED not allowed, choose one.
+        while(1) { }
+    }
+
+    if (CONTROL_SERIAL_USART3_ENABLED && SIDEBOARD_SERIAL_USART3_ENABLED) {
+        //#error CONTROL_SERIAL_USART3_ENABLED and SIDEBOARD_SERIAL_USART3_ENABLED not allowed, choose one.
+        while(1) { }
+    }
+
+    if (DEBUG_SERIAL_USART2_ENABLED && FEEDBACK_SERIAL_USART2_ENABLED) {
+        //#error DEBUG_SERIAL_USART2_ENABLED and FEEDBACK_SERIAL_USART2_ENABLED not allowed, choose one.
+        while(1) { }
+    }
+
+    if (DEBUG_SERIAL_USART3_ENABLED && FEEDBACK_SERIAL_USART3_ENABLED) {
+        //#error DEBUG_SERIAL_USART3_ENABLED and FEEDBACK_SERIAL_USART3_ENABLED not allowed, choose one.
+        while(1) { }
+    }
+
+    if (DEBUG_SERIAL_USART2_ENABLED && DEBUG_SERIAL_USART3_ENABLED) {
+        //#error DEBUG_SERIAL_USART2_ENABLED and DEBUG_SERIAL_USART3_ENABLED not allowed, choose one.
+        while(1) { }
+    }
+
+    if (CONTROL_PPM_LEFT_ENABLED && CONTROL_PPM_RIGHT_ENABLED) {
+        //#error CONTROL_PPM_LEFT_ENABLED and CONTROL_PPM_RIGHT_ENABLED not allowed, choose one.
+        while(1) { }
+    }
+
+    if (CONTROL_PWM_LEFT_ENABLED && CONTROL_PWM_RIGHT_ENABLED) {
+        //#error CONTROL_PWM_LEFT and CONTROL_PWM_RIGHT not allowed, choose one.
+        while(1) { }
+    }
+
+    if (SUPPORT_BUTTONS_LEFT && SUPPORT_BUTTONS_RIGHT) {
+        //#error SUPPORT_BUTTONS_LEFT and SUPPORT_BUTTONS_RIGHT not allowed, choose one.
+        while(1) { }
+    }
+
+    // LEFT cable checks
+    if (CONTROL_ADC_ENABLED && (CONTROL_SERIAL_USART2_ENABLED || SIDEBOARD_SERIAL_USART2_ENABLED || FEEDBACK_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART2_ENABLED)) {
+        //#error CONTROL_ADC_ENABLED and SERIAL_USART2 not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (CONTROL_PPM_LEFT_ENABLED && (CONTROL_SERIAL_USART2_ENABLED || SIDEBOARD_SERIAL_USART2_ENABLED || FEEDBACK_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART2_ENABLED)) {
+        //#error CONTROL_PPM_LEFT_ENABLED and SERIAL_USART2 not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (CONTROL_PWM_LEFT_ENABLED && (CONTROL_SERIAL_USART2_ENABLED || SIDEBOARD_SERIAL_USART2_ENABLED || FEEDBACK_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART2_ENABLED)) {
+        //#error CONTROL_PWM_LEFT_ENABLED and SERIAL_USART2 not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (SUPPORT_BUTTONS_LEFT && (CONTROL_SERIAL_USART2_ENABLED || SIDEBOARD_SERIAL_USART2_ENABLED || FEEDBACK_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART2_ENABLED)) {
+        //#error SUPPORT_BUTTONS_LEFT and SERIAL_USART2 not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (SUPPORT_BUTTONS_LEFT && (CONTROL_ADC_ENABLED || CONTROL_PPM_LEFT_ENABLED || CONTROL_PWM_LEFT_ENABLED)) {
+        //#error SUPPORT_BUTTONS_LEFT and (CONTROL_ADC_ENABLED or CONTROL_PPM_LEFT_ENABLED or CONTROL_PWM_LEFT_ENABLED) not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (CONTROL_ADC_ENABLED && (CONTROL_PPM_LEFT_ENABLED || CONTROL_PWM_LEFT_ENABLED)) {
+        //#error CONTROL_ADC_ENABLED and (CONTROL_PPM_LEFT_ENABLED or CONTROL_PWM_LEFT_ENABLED) not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (CONTROL_PPM_LEFT_ENABLED && CONTROL_PWM_LEFT_ENABLED) {
+        //#error CONTROL_PPM_LEFT_ENABLED and CONTROL_PWM_LEFT_ENABLED not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+
+    // RIGHT cable checks
+    if (CONTROL_NUNCHUK_ENABLED && (CONTROL_SERIAL_USART3_ENABLED || SIDEBOARD_SERIAL_USART3_ENABLED || FEEDBACK_SERIAL_USART3_ENABLED || DEBUG_SERIAL_USART3_ENABLED)) {
+        //#error CONTROL_NUNCHUK_ENABLED and SERIAL_USART3 not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (CONTROL_PPM_RIGHT_ENABLED && (CONTROL_SERIAL_USART3_ENABLED || SIDEBOARD_SERIAL_USART3_ENABLED || FEEDBACK_SERIAL_USART3_ENABLED || DEBUG_SERIAL_USART3_ENABLED)) {
+        //#error CONTROL_PPM_RIGHT_ENABLED and SERIAL_USART3 not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (CONTROL_PWM_RIGHT_ENABLED && (CONTROL_SERIAL_USART3_ENABLED || SIDEBOARD_SERIAL_USART3_ENABLED || FEEDBACK_SERIAL_USART3_ENABLED || DEBUG_SERIAL_USART3_ENABLED)) {
+        //#error CONTROL_PWM_RIGHT_ENABLED and SERIAL_USART3 not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (DEBUG_I2C_LCD && (CONTROL_SERIAL_USART3_ENABLED || SIDEBOARD_SERIAL_USART3_ENABLED || FEEDBACK_SERIAL_USART3_ENABLED || DEBUG_SERIAL_USART3_ENABLED)) {
+        //#error DEBUG_I2C_LCD and SERIAL_USART3 not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (SUPPORT_BUTTONS_RIGHT && (CONTROL_SERIAL_USART3_ENABLED || SIDEBOARD_SERIAL_USART3_ENABLED || FEEDBACK_SERIAL_USART3_ENABLED || DEBUG_SERIAL_USART3_ENABLED)) {
+        //#error SUPPORT_BUTTONS_RIGHT and SERIAL_USART3 not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (SUPPORT_BUTTONS_RIGHT && (CONTROL_NUNCHUK_ENABLED || CONTROL_PPM_RIGHT_ENABLED || CONTROL_PWM_RIGHT_ENABLED || DEBUG_I2C_LCD)) {
+        //#error SUPPORT_BUTTONS_RIGHT and (CONTROL_NUNCHUK_ENABLED or CONTROL_PPM_RIGHT_ENABLED or CONTROL_PWM_RIGHT_ENABLED or DEBUG_I2C_LCD) not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (CONTROL_NUNCHUK_ENABLED && (CONTROL_PPM_RIGHT_ENABLED || CONTROL_PWM_RIGHT_ENABLED || DEBUG_I2C_LCD)) {
+        //#error CONTROL_NUNCHUK_ENABLED and (CONTROL_PPM_RIGHT_ENABLED or CONTROL_PWM_RIGHT_ENABLED or DEBUG_I2C_LCD) not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (DEBUG_I2C_LCD && (CONTROL_PPM_RIGHT_ENABLED || CONTROL_PWM_RIGHT_ENABLED)) {
+        //#error DEBUG_I2C_LCD and (CONTROL_PPM_RIGHT_ENABLED or CONTROL_PWM_RIGHT_ENABLED) not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+    if (CONTROL_PPM_RIGHT_ENABLED && CONTROL_PWM_RIGHT_ENABLED) {
+        //#error CONTROL_PPM_RIGHT_ENABLED and CONTROL_PWM_RIGHT_ENABLED not allowed. It is on the same cable.
+        while(1) { }
+    }
+
+
+    // Functional checks
+    if ((CONTROL_PPM_LEFT_ENABLED || CONTROL_PPM_RIGHT_ENABLED) && PPM_NUM_CHANNELS == 0) {
+        //#error Total number of PPM channels needs to be set
+        while(1) { }
+    }
+// ############################# END OF VALIDATE SETTINGS ############################
 }

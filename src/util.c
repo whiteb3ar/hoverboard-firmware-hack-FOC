@@ -253,12 +253,12 @@ void init_utils() {
   //#endif
 
   commandL_len = IBUS_COMMAND
-    ? SIZEOF_IBUS_SERIAL_COMMAND + IBUS_NUM_CHANNELS * sizeof(uint8_t)
-    : sizeof(commandL);
+    ? SIZEOF_IBUS_SERIAL_COMMAND + IBUS_NUM_CHANNELS * 2 * sizeof(uint8_t)
+    : SIZEOF_SERIAL_COMMAND;
 
   commandR_len = sizeof(commandR)
-    ? SIZEOF_IBUS_SERIAL_COMMAND + IBUS_NUM_CHANNELS * sizeof(uint8_t)
-    : sizeof(commandR);
+    ? SIZEOF_IBUS_SERIAL_COMMAND + IBUS_NUM_CHANNELS * 2 * sizeof(uint8_t)
+    : SIZEOF_SERIAL_COMMAND;
 }
 
 /* =========================== Initialization Functions =========================== */
@@ -891,7 +891,7 @@ void readInputRaw(void) {
     if (inIdx == CONTROL_SERIAL_USART2_INDEX) {
       if (CONTROL_IBUS) {
         for (uint8_t i = 0; i < (IBUS_NUM_CHANNELS * 2); i+=2) {
-          ibusL_captured_value[(i/2)] = CLAMP(SERIAL_IBUS_COMMAND_CHANNEL(commandL, IBUS_NUM_CHANNELS, i) - 1000, 0, INPUT_MAX); // 1000-2000 -> 0-1000
+          ibusL_captured_value[(i/2)] = CLAMP(SERIAL_IBUS_COMMAND_CHANNEL(commandL, i) - 1000, 0, INPUT_MAX); // 1000-2000 -> 0-1000
         }
         input1[inIdx].raw = (ibusL_captured_value[0] - 500) * 2;
         input2[inIdx].raw = (ibusL_captured_value[1] - 500) * 2; 
@@ -905,7 +905,7 @@ void readInputRaw(void) {
     if (inIdx == CONTROL_SERIAL_USART3_INDEX) {
       if (CONTROL_IBUS) {
         for (uint8_t i = 0; i < (IBUS_NUM_CHANNELS * 2); i+=2) {
-          ibusR_captured_value[(i/2)] = CLAMP(SERIAL_IBUS_COMMAND_CHANNEL(commandR, IBUS_NUM_CHANNELS, i) - 1000, 0, INPUT_MAX); // 1000-2000 -> 0-1000
+          ibusR_captured_value[(i/2)] = CLAMP(SERIAL_IBUS_COMMAND_CHANNEL(commandR, i) - 1000, 0, INPUT_MAX); // 1000-2000 -> 0-1000
         }
         input1[inIdx].raw = (ibusR_captured_value[0] - 500) * 2;
         input2[inIdx].raw = (ibusR_captured_value[1] - 500) * 2; 
@@ -1288,7 +1288,7 @@ void usart_process_command(uint8_t* command_in, uint8_t* command_out, uint8_t us
     if (SERIAL_IBUS_COMMAND_START(command_in) == IBUS_LENGTH && SERIAL_IBUS_COMMAND_TYPE(command_in) == IBUS_COMMAND) {
       ibus_chksum = 0xFFFF - IBUS_LENGTH - IBUS_COMMAND;
       for (uint8_t i = 0; i < (IBUS_NUM_CHANNELS * 2); i++) {
-        ibus_chksum -= SERIAL_IBUS_COMMAND_CHANNEL_RAW(command_in, IBUS_NUM_CHANNELS, i);
+        ibus_chksum -= SERIAL_IBUS_COMMAND_CHANNEL_RAW(command_in, i);
       }
       if (ibus_chksum == (uint16_t)((SERIAL_IBUS_COMMAND_CHECKSUM_H(command_in, IBUS_NUM_CHANNELS) << 8) + SERIAL_IBUS_COMMAND_CHECKSUM_L(command_in, IBUS_NUM_CHANNELS))) {
         *command_out = *command_in;

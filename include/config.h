@@ -271,7 +271,6 @@ extern uint32_t AUTO_CALIBRATION_ENA;              // Enable/Disable input auto-
 // ############################### DEBUG LCD ###############################
 // #define DEBUG_I2C_LCD                // standard 16x2 or larger text-lcd via i2c-converter on right sensor board cable
 // ########################### END OF DEBUG LCD ############################
-
 extern uint32_t CONTROL_ADC_ENABLED;
 extern uint32_t CONTROL_ADC_INDEX;
 extern uint32_t DEBUG_I2C_LCD;
@@ -330,9 +329,7 @@ extern ControlVariant CONTROL_VARIANT;
 
 extern uint32_t INVERT_L_DIRECTION;
 extern uint32_t INVERT_R_DIRECTION;
-
 extern uint32_t STANDSTILL_HOLD_ENABLE;
-
 extern uint32_t FLASH_WRITE_KEY;
 
 // ################################# VARIANT_ADC SETTINGS ############################
@@ -749,6 +746,8 @@ extern uint32_t SERIAL_START_FRAME; // [-] Start frame definition for serial com
 #endif
 // ########################### UART SETIINGS ############################
 
+
+
 // ############################### APPLY DEFAULT SETTINGS ###############################
 #ifndef RATE
   #define RATE DEFAULT_RATE
@@ -768,123 +767,6 @@ extern uint32_t SERIAL_START_FRAME; // [-] Start frame definition for serial com
   #define INPUTS_NR               1
 #endif
 // ########################### END OF APPLY DEFAULT SETTING ############################
-
-
-
-// ############################### VALIDATE SETTINGS ###############################
-// #if !defined(VARIANT_ADC) && !defined(VARIANT_USART) && !defined(VARIANT_NUNCHUK) && !defined(VARIANT_PPM) && !defined(VARIANT_PWM) && \
-//     !defined(VARIANT_IBUS) && !defined(VARIANT_HOVERCAR) && !defined(VARIANT_HOVERBOARD) && !defined(VARIANT_TRANSPOTTER) && !defined(VARIANT_SKATEBOARD)
-//   #error Variant not defined! Please check platformio.ini or Inc/config.h for available variants.
-// #endif
-
-
-// General checks
-#if defined(CONTROL_SERIAL_USART2) && defined(SIDEBOARD_SERIAL_USART2)
-  #error CONTROL_SERIAL_USART2 and SIDEBOARD_SERIAL_USART2 not allowed, choose one.
-#endif
-
-#if defined(CONTROL_SERIAL_USART3) && defined(SIDEBOARD_SERIAL_USART3)
-  #error CONTROL_SERIAL_USART3 and SIDEBOARD_SERIAL_USART3 not allowed, choose one.
-#endif
-
-#if defined(DEBUG_SERIAL_USART2) && defined(FEEDBACK_SERIAL_USART2)
-  #error DEBUG_SERIAL_USART2 and FEEDBACK_SERIAL_USART2 not allowed, choose one.
-#endif
-
-#if defined(DEBUG_SERIAL_USART3) && defined(FEEDBACK_SERIAL_USART3)
-  #error DEBUG_SERIAL_USART3 and FEEDBACK_SERIAL_USART3 not allowed, choose one.
-#endif
-
-#if defined(DEBUG_SERIAL_USART2) && defined(DEBUG_SERIAL_USART3)
-  #error DEBUG_SERIAL_USART2 and DEBUG_SERIAL_USART3 not allowed, choose one.
-#endif
-
-#if defined(CONTROL_PPM_LEFT) && defined(CONTROL_PPM_RIGHT)
-  #error CONTROL_PPM_LEFT and CONTROL_PPM_RIGHT not allowed, choose one.
-#endif
-
-#if defined(CONTROL_PWM_LEFT) && defined(CONTROL_PWM_RIGHT)
-  #error CONTROL_PWM_LEFT and CONTROL_PWM_RIGHT not allowed, choose one.
-#endif
-
-#if defined(SUPPORT_BUTTONS_LEFT) && defined(SUPPORT_BUTTONS_RIGHT)
-  #error SUPPORT_BUTTONS_LEFT and SUPPORT_BUTTONS_RIGHT not allowed, choose one.
-#endif
-
-
-// LEFT cable checks
-#if defined(CONTROL_ADC) && (defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2))
-  #error CONTROL_ADC and SERIAL_USART2 not allowed. It is on the same cable.
-#endif
-
-#if defined(CONTROL_PPM_LEFT) && (defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2))
-  #error CONTROL_PPM_LEFT and SERIAL_USART2 not allowed. It is on the same cable.
-#endif
-
-#if defined(CONTROL_PWM_LEFT) && (defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2))
-  #error CONTROL_PWM_LEFT and SERIAL_USART2 not allowed. It is on the same cable.
-#endif
-
-#if defined(SUPPORT_BUTTONS_LEFT) && (defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2))
-  #error SUPPORT_BUTTONS_LEFT and SERIAL_USART2 not allowed. It is on the same cable.
-#endif
-
-#if defined(SUPPORT_BUTTONS_LEFT) && (defined(CONTROL_ADC) || defined(CONTROL_PPM_LEFT) || defined(CONTROL_PWM_LEFT))
-  #error SUPPORT_BUTTONS_LEFT and (CONTROL_ADC or CONTROL_PPM_LEFT or CONTROL_PWM_LEFT) not allowed. It is on the same cable.
-#endif
-
-#if defined(CONTROL_ADC) && (defined(CONTROL_PPM_LEFT) || defined(CONTROL_PWM_LEFT))
-  #error CONTROL_ADC and (CONTROL_PPM_LEFT or CONTROL_PWM_LEFT) not allowed. It is on the same cable.
-#endif
-
-#if defined(CONTROL_PPM_LEFT) && defined(CONTROL_PWM_LEFT)
-  #error CONTROL_PPM_LEFT and CONTROL_PWM_LEFT not allowed. It is on the same cable.
-#endif
-
-
-// RIGHT cable checks
-#if defined(CONTROL_NUNCHUK) && (defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3))
-  #error CONTROL_NUNCHUK and SERIAL_USART3 not allowed. It is on the same cable.
-#endif
-
-#if defined(CONTROL_PPM_RIGHT) && (defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3))
-  #error CONTROL_PPM_RIGHT and SERIAL_USART3 not allowed. It is on the same cable.
-#endif
-
-#if defined(CONTROL_PWM_RIGHT) && (defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3))
-  #error CONTROL_PWM_RIGHT and SERIAL_USART3 not allowed. It is on the same cable.
-#endif
-
-#if defined(DEBUG_I2C_LCD) && (defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3))
-  #error DEBUG_I2C_LCD and SERIAL_USART3 not allowed. It is on the same cable.
-#endif
-
-#if defined(SUPPORT_BUTTONS_RIGHT) && (defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3))
-  #error SUPPORT_BUTTONS_RIGHT and SERIAL_USART3 not allowed. It is on the same cable.
-#endif
-
-#if defined(SUPPORT_BUTTONS_RIGHT) && (defined(CONTROL_NUNCHUK) || defined(CONTROL_PPM_RIGHT) || defined(CONTROL_PWM_RIGHT) || defined(DEBUG_I2C_LCD))
-  #error SUPPORT_BUTTONS_RIGHT and (CONTROL_NUNCHUK or CONTROL_PPM_RIGHT or CONTROL_PWM_RIGHT or DEBUG_I2C_LCD) not allowed. It is on the same cable.
-#endif
-
-#if defined(CONTROL_NUNCHUK) && (defined(CONTROL_PPM_RIGHT) || defined(CONTROL_PWM_RIGHT) || defined(DEBUG_I2C_LCD))
-  #error CONTROL_NUNCHUK and (CONTROL_PPM_RIGHT or CONTROL_PWM_RIGHT or DEBUG_I2C_LCD) not allowed. It is on the same cable.
-#endif
-
-#if defined(DEBUG_I2C_LCD) && (defined(CONTROL_PPM_RIGHT) || defined(CONTROL_PWM_RIGHT))
-  #error DEBUG_I2C_LCD and (CONTROL_PPM_RIGHT or CONTROL_PWM_RIGHT) not allowed. It is on the same cable.
-#endif
-
-#if defined(CONTROL_PPM_RIGHT) && defined(CONTROL_PWM_RIGHT)
-  #error CONTROL_PPM_RIGHT and CONTROL_PWM_RIGHT not allowed. It is on the same cable.
-#endif
-
-
-// Functional checks
-#if (defined(CONTROL_PPM_LEFT) || defined(CONTROL_PPM_RIGHT)) && !defined(PPM_NUM_CHANNELS)
-  #error Total number of PPM channels needs to be set
-#endif
-// ############################# END OF VALIDATE SETTINGS ############################
 
 #endif
 

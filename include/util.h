@@ -28,7 +28,7 @@
 //#if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
   //#ifdef CONTROL_IBUS
     #define SERIAL_COMMAND_SIZEOF_MAX IBUS_NUM_CHANNELS_MAX * 2 * sizeof(uint8_t) + 4 * sizeof(uint16_t)
-    #pragma pack(1)
+    //#pragma pack(1)
     // typedef struct {
     //   uint8_t  start;
     //   uint8_t  type; 
@@ -38,14 +38,13 @@
     // } IBusSerialCommand;
 
     #define SIZEOF_IBUS_SERIAL_COMMAND (4 * sizeof(uint8_t))
-
     #define SERIAL_IBUS_COMMAND_START(addr) (uint8_t)*(((uint8_t*)addr) + 0)
     #define SERIAL_IBUS_COMMAND_TYPE(addr) (uint8_t)*(((uint8_t*)addr) + 1)
     #define SERIAL_IBUS_COMMAND_CHECKSUM_L(addr, num_channels) (int8_t)*(((uint8_t*)addr) + 2 + 2 * num_channels)
     #define SERIAL_IBUS_COMMAND_CHECKSUM_H(addr, num_channels) (uint16_t)*(((uint8_t*)addr) + 2 + 2 * num_channels + 1)
     //commandL.channels[i] + (commandL.channels[i+1] << 8)
-    #define SERIAL_IBUS_COMMAND_CHANNEL_RAW(addr, num_channels, i) (uint8_t)(*(((uint8_t*)addr) + 2 + num_channels + i))
-    #define SERIAL_IBUS_COMMAND_CHANNEL(addr, num_channels, i) (uint16_t)(SERIAL_IBUS_COMMAND_CHANNEL_RAW(addr, num_channels, i) + (SERIAL_IBUS_COMMAND_CHANNEL_RAW(addr, num_channels, i + 1) << 8))
+    #define SERIAL_IBUS_COMMAND_CHANNEL_RAW(addr, i) (uint8_t)(*(((uint8_t*)addr) + 2 + i))
+    #define SERIAL_IBUS_COMMAND_CHANNEL(addr, i) (uint16_t)(SERIAL_IBUS_COMMAND_CHANNEL_RAW(addr, i) + (SERIAL_IBUS_COMMAND_CHANNEL_RAW(addr, i + 1) << 8))
 
   //#else
     // #pragma pack(1)
@@ -56,6 +55,7 @@
     //   uint16_t  checksum;
     // } SerialCommand;
 
+    #define SIZEOF_SERIAL_COMMAND (2 * sizeof(uint8_t) + 2 * sizeof(int8_t))
     #define SERIAL_COMMAND_START(addr) (uint16_t)*(((uint8_t*)addr) + 0)
     #define SERIAL_COMMAND_STEER(addr) (int16_t)*(((uint8_t*)addr) + 4)
     #define SERIAL_COMMAND_SPEED(addr) (int16_t)*(((uint8_t*)addr) + 8)
