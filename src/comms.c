@@ -29,17 +29,8 @@
 #include "util.h"
 #include "comms.h"
 
-#if defined(DEBUG_SERIAL_PROTOCOL)
-#if defined(DEBUG_SERIAL_PROTOCOL) && (defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3))
-
-#ifdef CONTROL_ADC
-  #define RAW_MIN 0
-  #define RAW_MAX 4095
-#else
-  #define RAW_MIN -1000
-  #define RAW_MAX 1000
-#endif
-
+//#if defined(DEBUG_SERIAL_PROTOCOL)
+//#if defined(DEBUG_SERIAL_PROTOCOL) && (defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3))
 
 #define MAX_PARAM_WATCH 15
 
@@ -83,8 +74,11 @@ const command_entry commands[] = {
     {WRITE  ,"SAVE"    ,saveAllParamVal   ,NULL            ,NULL           ,"Save Parameters to EEPROM"},
 };
 
+#define RAW_MIN 0
+#define RAW_MAX 0
+
 enum paramTypes {PARAMETER,VARIABLE};
-const parameter_entry params[] = {
+parameter_entry params[] = {
   // CONTROL PARAMETERS
   // Type       ,Name                 ,Datatype ,ValueL ptr                  ,ValueR                    ,EEPRM Addr ,Init              Int/Ext ,Min    ,Max    ,Div             ,Mul  ,Fix   ,Callback Function  ,Help text
     {PARAMETER  ,"CTRL_MOD"           ,ADD_PARAM(ctrlModReqRaw)              ,NULL                      ,0          ,CTRL_MOD_REQ      ,0      ,1      ,3      ,0               ,0    ,0     ,NULL               ,"Ctrl mode 1:VLT 2:SPD 3:TRQ"},
@@ -111,7 +105,7 @@ const parameter_entry params[] = {
     {PARAMETER  ,"IN2_MID"            ,ADD_PARAM(input2[0].mid)              ,NULL                      ,9          ,0                 ,0      ,RAW_MIN,RAW_MAX,0               ,0    ,0     ,0                  ,"Input2 mid"},
     {PARAMETER  ,"IN2_MAX"            ,ADD_PARAM(input2[0].max)              ,NULL                      ,10         ,RAW_MAX           ,0      ,RAW_MIN,RAW_MAX,0               ,0    ,0     ,0                  ,"Input2 max"},
     {VARIABLE   ,"IN2_CMD"            ,ADD_PARAM(input2[0].cmd)              ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,0                  ,"Input2 cmd"},
-#if defined(PRI_INPUT1) && defined(PRI_INPUT2) && defined(AUX_INPUT1) && defined(AUX_INPUT2)  
+//#if defined(PRI_INPUT1) && defined(PRI_INPUT2) && defined(AUX_INPUT1) && defined(AUX_INPUT2)  
   // Type       ,Name                 ,ValueL ptr                            ,ValueR                    ,EEPRM Addr ,Init              Int/Ext ,Min    ,Max    ,Div             ,Mul  ,Fix   ,Callback Function  ,Help text
     {VARIABLE   ,"AUX_IN1_RAW"        ,ADD_PARAM(input1[1].raw)              ,NULL                      ,0          ,0                 ,0      ,RAW_MIN,RAW_MAX,0               ,0    ,0     ,0                  ,"Aux. input1 raw"},        
     {PARAMETER  ,"AUX_IN1_TYP"        ,ADD_PARAM(input1[1].typ)              ,NULL                      ,11         ,0                 ,0      ,0      ,3      ,0               ,0    ,0     ,0                  ,"Aux. input1 type"},        
@@ -126,7 +120,7 @@ const parameter_entry params[] = {
     {PARAMETER  ,"AUX_IN2_MID"        ,ADD_PARAM(input2[1].mid)              ,NULL                      ,17         ,0                 ,0      ,RAW_MIN,RAW_MAX,0               ,0    ,0     ,0                  ,"Aux. input2 mid"},
     {PARAMETER  ,"AUX_IN2_MAX"        ,ADD_PARAM(input2[1].max)              ,NULL                      ,18         ,RAW_MAX           ,0      ,RAW_MIN,RAW_MAX,0               ,0    ,0     ,0                  ,"Aux. input2 max"},
     {VARIABLE   ,"AUX_IN2_CMD"        ,ADD_PARAM(input2[1].cmd)              ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,0                  ,"Aux. input2 cmd"},
-#endif  
+//#endif  
   // FEEDBACK
   // Type       ,Name                 ,Datatype, ValueL ptr                  ,ValueR                    ,EEPRM Addr ,Init              Int/Ext ,Min    ,Max    ,Div             ,Mul  ,Fix   ,Callback Function  ,Help text
     {VARIABLE   ,"DC_CURR"            ,ADD_PARAM(dc_curr)                    ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"Total DC Link current A *100"},
@@ -142,9 +136,42 @@ const parameter_entry params[] = {
     {VARIABLE   ,"STR_COEF"           ,0       , NULL                        ,NULL                      ,0          ,STEER_COEFFICIENT ,0      ,0      ,0      ,0               ,10   ,14    ,NULL               ,"Steer Coefficient *10"},
     {VARIABLE   ,"BATV"               ,ADD_PARAM(batVoltageCalib)            ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"Calibrated Battery voltage *100"},       
     {VARIABLE   ,"TEMP"               ,ADD_PARAM(board_temp_deg_c)           ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"Calibrated Temperature °C *10"},       
-
 };
 
+int8_t findParamInternal(char* query);
+
+void init_comms() {
+  uint32_t raw_min;
+  uint32_t raw_max;
+
+  if (CONTROL_ADC_ENABLED) {
+    raw_min = 0;
+    raw_max = 4095;
+  } else {
+    raw_min = -1000;
+    raw_max = 1000;
+  }
+
+  int8_t index = -1;
+  parameter_entry* param;
+
+  index = findParamInternal("IN1_RAW"); if (index >= 0) { param = &params[index]; param->init = 0; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("IN1_MIN"); if (index >= 0) { param = &params[index]; param->init = raw_min; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("IN1_MID"); if (index >= 0) { param = &params[index]; param->init = 0; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("IN1_MAX"); if (index >= 0) { param = &params[index]; param->init = raw_max; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("IN2_RAW"); if (index >= 0) { param = &params[index]; param->init = 0; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("IN2_MIN"); if (index >= 0) { param = &params[index]; param->init = raw_min; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("IN2_MID"); if (index >= 0) { param = &params[index]; param->init = 0; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("IN2_MAX"); if (index >= 0) { param = &params[index]; param->init = raw_max; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("AUX_IN1_RAW"); if (index >= 0) { param = &params[index]; param->init = 0; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("AUX_IN1_MIN"); if (index >= 0) { param = &params[index]; param->init = raw_min; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("AUX_IN1_MID"); if (index >= 0) { param = &params[index]; param->init = 0; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("AUX_IN1_MAX"); if (index >= 0) { param = &params[index]; param->init = raw_max; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("AUX_IN2_RAW"); if (index >= 0) { param = &params[index]; param->init = 0; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("AUX_IN2_MIN"); if (index >= 0) { param = &params[index]; param->init = raw_min; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("AUX_IN2_MID"); if (index >= 0) { param = &params[index]; param->init = 0; param->min = raw_min; param->max = raw_max; }
+  index = findParamInternal("AUX_IN2_MAX"); if (index >= 0) { param = &params[index]; param->init = raw_max; param->min = raw_min; param->max = raw_max; }
+}
 
 const char *errors[9] = {
   "Command not found", // Err1
@@ -481,6 +508,19 @@ int8_t findParam(uint8_t *userCommand, uint32_t len){
   return -1; // Not found
 }
 
+int8_t findParamInternal(char *query){
+  for(int index=0;index<PARAM_SIZE(params);index++){
+    uint8_t query_len = strlen(query);
+    uint8_t param_len = strlen(params[index].name);
+    if (param_len <= query_len){
+      if (memcmp(query,params[index].name,param_len)==0){
+        return index;
+      }
+    }
+  }
+  return -1; // Not found
+}
+
 // Parse and save the command to be executed
 void handle_input(uint8_t *userCommand, uint32_t len)
 {
@@ -647,6 +687,6 @@ void process_debug()
   }
 }
 
-#endif
-#endif  // DEBUG_SERIAL_PROTOCOL
+//#endif
+//#endif  // DEBUG_SERIAL_PROTOCOL
 

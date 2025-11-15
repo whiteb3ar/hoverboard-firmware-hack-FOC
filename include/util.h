@@ -25,25 +25,44 @@
 
 
 // Rx Structures USART
-#if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
-  #ifdef CONTROL_IBUS
-    typedef struct{
-      uint8_t  start;
-      uint8_t  type; 
-      uint8_t  channels[IBUS_NUM_CHANNELS*2];
-      uint8_t  checksuml;
-      uint8_t  checksumh;
-    } SerialCommand;
-  #else
-    typedef struct{
-      uint16_t  start;
-      int16_t   steer;
-      int16_t   speed;
-      uint16_t  checksum;
-    } SerialCommand;
-  #endif
-#endif
-#if defined(SIDEBOARD_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART3)
+//#if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
+  //#ifdef CONTROL_IBUS
+    #define SERIAL_COMMAND_SIZEOF_MAX IBUS_NUM_CHANNELS_MAX * 2 * sizeof(uint8_t) + 4 * sizeof(uint16_t)
+    #pragma pack(1)
+    // typedef struct {
+    //   uint8_t  start;
+    //   uint8_t  type; 
+    //   uint8_t  channels[IBUS_NUM_CHANNELS*2];
+    //   uint8_t  checksuml;
+    //   uint8_t  checksumh;
+    // } IBusSerialCommand;
+
+    #define SIZEOF_IBUS_SERIAL_COMMAND (4 * sizeof(uint8_t))
+
+    #define SERIAL_IBUS_COMMAND_START(addr) (uint8_t)*(((uint8_t*)addr) + 0)
+    #define SERIAL_IBUS_COMMAND_TYPE(addr) (uint8_t)*(((uint8_t*)addr) + 1)
+    #define SERIAL_IBUS_COMMAND_CHECKSUM_L(addr, num_channels) (int8_t)*(((uint8_t*)addr) + 2 + 2 * num_channels)
+    #define SERIAL_IBUS_COMMAND_CHECKSUM_H(addr, num_channels) (uint16_t)*(((uint8_t*)addr) + 2 + 2 * num_channels + 1)
+    //commandL.channels[i] + (commandL.channels[i+1] << 8)
+    #define SERIAL_IBUS_COMMAND_CHANNEL_RAW(addr, num_channels, i) (uint8_t)(*(((uint8_t*)addr) + 2 + num_channels + i))
+    #define SERIAL_IBUS_COMMAND_CHANNEL(addr, num_channels, i) (uint16_t)(SERIAL_IBUS_COMMAND_CHANNEL_RAW(addr, num_channels, i) + (SERIAL_IBUS_COMMAND_CHANNEL_RAW(addr, num_channels, i + 1) << 8))
+
+  //#else
+    // #pragma pack(1)
+    // typedef struct{
+    //   uint16_t  start;
+    //   int16_t   steer;
+    //   int16_t   speed;
+    //   uint16_t  checksum;
+    // } SerialCommand;
+
+    #define SERIAL_COMMAND_START(addr) (uint16_t)*(((uint8_t*)addr) + 0)
+    #define SERIAL_COMMAND_STEER(addr) (int16_t)*(((uint8_t*)addr) + 4)
+    #define SERIAL_COMMAND_SPEED(addr) (int16_t)*(((uint8_t*)addr) + 8)
+    #define SERIAL_COMMAND_CHECKSUM(addr) (uint16_t)*(((uint8_t*)addr) + 12)
+  //#endif
+//#endif
+//#if defined(SIDEBOARD_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART3)
     typedef struct{
       uint16_t  start;
       int16_t   pitch;      // Angle
@@ -53,7 +72,7 @@
       uint16_t  sensors;    // RC Switches and Optical sideboard sensors
       uint16_t  checksum;
     } SerialSideboard;
-#endif
+//#endif
 
 // Input Structure
 typedef struct {
@@ -94,15 +113,15 @@ void handleTimeout(void);
 void readCommand(void);
 void usart2_rx_check(void);
 void usart3_rx_check(void);
-#if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
+//#if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
 void usart_process_debug(uint8_t *userCommand, uint32_t len);
-#endif
-#if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
-void usart_process_command(SerialCommand *command_in, SerialCommand *command_out, uint8_t usart_idx);
-#endif
-#if defined(SIDEBOARD_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART3)
+//#endif
+//#if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
+void usart_process_command(uint8_t* command_in, uint8_t* command_out, uint8_t usart_idx);
+//#endif
+//#if defined(SIDEBOARD_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART3)
 void usart_process_sideboard(SerialSideboard *Sideboard_in, SerialSideboard *Sideboard_out, uint8_t usart_idx);
-#endif
+//#endif
 
 // Sideboard functions
 void sideboardLeds(uint8_t *leds);

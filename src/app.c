@@ -10,9 +10,9 @@
 #include "comms.h"
 #include "hal/hal.h"
 
-#if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
+//if (DEBUG_I2C_LCD || SUPPORT_LCD) {
 #include "hd44780.h"
-#endif
+//}
 
 //------------------------------------------------------------------------
 // Global variables set externally
@@ -22,10 +22,10 @@ extern TIM_HandleTypeDef htim_right;
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
 extern volatile adc_buf_t adc_buffer;
-#if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
+//if (DEBUG_I2C_LCD || SUPPORT_LCD) {
   extern LCD_PCF8574_HandleTypeDef lcd;
   extern uint8_t LCDerrorFlag;
-#endif
+//}
 
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
@@ -61,19 +61,19 @@ extern uint8_t enable;                  // global variable for motor enable
 
 extern int16_t batVoltage;              // global variable for battery voltage
 
-#if defined(SIDEBOARD_SERIAL_USART2)
+//if (SIDEBOARD_SERIAL_USART2_ENABLED) {
 extern SerialSideboard Sideboard_L;
-#endif
-#if defined(SIDEBOARD_SERIAL_USART3)
+//}
+//if (SIDEBOARD_SERIAL_USART3_ENABLED) {
 extern SerialSideboard Sideboard_R;
-#endif
-#if (defined(CONTROL_PPM_LEFT) && defined(DEBUG_SERIAL_USART3)) || (defined(CONTROL_PPM_RIGHT) && defined(DEBUG_SERIAL_USART2))
-extern volatile uint16_t ppm_captured_value[PPM_NUM_CHANNELS+1];
-#endif
-#if (defined(CONTROL_PWM_LEFT) && defined(DEBUG_SERIAL_USART3)) || (defined(CONTROL_PWM_RIGHT) && defined(DEBUG_SERIAL_USART2))
+//}
+//if ((CONTROL_PPM_LEFT && DEBUG_SERIAL_USART3_ENABLED) || (CONTROL_PPM_RIGHT && DEBUG_SERIAL_USART2_ENABLED)) {
+extern volatile uint16_t ppm_captured_value[PPM_NUM_CHANNELS_MAX+1];
+//}
+//if ((CONTROL_PWM_LEFT && DEBUG_SERIAL_USART3_ENABLED) || (CONTROL_PWM_RIGHT && DEBUG_SERIAL_USART2_ENABLED)) {
 extern volatile uint16_t pwm_captured_ch1_value;
 extern volatile uint16_t pwm_captured_ch2_value;
-#endif
+//}
 
 
 //------------------------------------------------------------------------
@@ -93,7 +93,7 @@ int16_t cmdR;                    // global variable for Right Command
 //------------------------------------------------------------------------
 // Local variables
 //------------------------------------------------------------------------
-#if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
+//if (FEEDBACK_SERIAL_USART2_ENABLED || FEEDBACK_SERIAL_USART3_ENABLED) {
 typedef struct{
   uint16_t  start;
   int16_t   cmd1;
@@ -106,15 +106,15 @@ typedef struct{
   uint16_t  checksum;
 } SerialFeedback;
 static SerialFeedback Feedback;
-#endif
-#if defined(FEEDBACK_SERIAL_USART2)
+//}
+//if (FEEDBACK_SERIAL_USART2_ENABLED) {
 static uint8_t sideboard_leds_L;
-#endif
-#if defined(FEEDBACK_SERIAL_USART3)
+//}
+//if (FEEDBACK_SERIAL_USART3_ENABLED) {
 static uint8_t sideboard_leds_R;
-#endif
+//}
 
-#ifdef VARIANT_TRANSPOTTER
+//if (CONTROL_VARIANT == VARIANT_TRANSPOTTER) {
   uint8_t  nunchuk_connected;
   extern float    setDistance;  
 
@@ -124,16 +124,16 @@ static uint8_t sideboard_leds_R;
   static int      distanceErr;  
   static int      lastDistance = 0;
   static uint16_t transpotter_counter = 0;
-#endif
+//}
 
 static int16_t    speed;                // local variable for speed. -1000 to 1000
-#ifndef VARIANT_TRANSPOTTER
+//if (CONTROL_VARIANT == VARIANT_TRANSPOTTER) {
   static int16_t  steer;                // local variable for steering. -1000 to 1000
   static int16_t  steerRateFixdt;       // local fixed-point variable for steering rate limiter
   static int16_t  speedRateFixdt;       // local fixed-point variable for speed rate limiter
   static int32_t  steerFixdt;           // local fixed-point variable for steering low-pass filter
   static int32_t  speedFixdt;           // local fixed-point variable for speed low-pass filter
-#endif
+//}
 
 static uint32_t    buzzerTimer_prev = 0;
 static uint32_t    inactivity_timeout_counter;
@@ -141,16 +141,16 @@ static MultipleTap MultipleTapBrake;    // define multiple tap functionality for
 
 static uint16_t rate = RATE; // Adjustable rate to support multiple drive modes on startup
 
-#ifdef MULTI_MODE_DRIVE
+//if (MULTI_MODE_DRIVE) {
   static uint8_t drive_mode;
   static uint16_t max_speed;
-#endif
+//}
 
 int app_run(void) {  
   int32_t board_temp_adcFixdt = adc_buffer.temp << 16;  // Fixed-point filter output initialized with current ADC converted to fixed-point
   int16_t board_temp_adcFilt  = adc_buffer.temp;
 
-  #ifdef MULTI_MODE_DRIVE
+  if (MULTI_MODE_DRIVE) {
     if (adc_buffer.l_tx2 > input1[0].min + 50 && adc_buffer.l_rx2 > input2[0].min + 50) {
       drive_mode = 2;
       max_speed = MULTI_MODE_DRIVE_M3_MAX;
@@ -172,18 +172,18 @@ int app_run(void) {
     }
 
     printf("Drive mode %i selected: max_speed:%i acc_rate:%i \r\n", drive_mode, max_speed, rate);
-  #endif
+  }
 
   // Loop until button is released
   while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { hal_delay(10); }
 
-  #ifdef MULTI_MODE_DRIVE
+  if (MULTI_MODE_DRIVE) {
     // Wait until triggers are released. Exit if timeout elapses (to unblock if the inputs are not calibrated)
     int iTimeout = 0;
     while((adc_buffer.l_rx2 + adc_buffer.l_tx2) >= (input1[0].min + input2[0].min) && iTimeout++ < 300) {
       hal_delay(10);
     }
-  #endif
+  }
 
   while(1) {
     if (buzzerTimer - buzzerTimer_prev > 16*DELAY_IN_MAIN_LOOP) {   // 1 ms = 16 ticks buzzerTimer
@@ -191,7 +191,7 @@ int app_run(void) {
     readCommand();                        // Read Command: input1[inIdx].cmd, input2[inIdx].cmd
     calcAvgSpeed();                       // Calculate average measured speed: speedAvg, speedAvgAbs
 
-    #ifndef VARIANT_TRANSPOTTER
+    if (CONTROL_VARIANT == VARIANT_TRANSPOTTER) {
       // ####### MOTOR ENABLING: Only if the initial input is very small (for SAFETY) #######
       if (enable == 0 && !rtY_Left.z_errCode && !rtY_Right.z_errCode && 
           ABS(input1[inIdx].cmd) < 50 && ABS(input2[inIdx].cmd) < 50){
@@ -199,23 +199,23 @@ int app_run(void) {
         beepShort(4); hal_delay(100);
         steerFixdt = speedFixdt = 0;      // reset filters
         enable = 1;                       // enable motors
-        #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
+        if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
         printf("-- Motors enabled --\r\n");
-        #endif
+        }
       }
 
       // ####### VARIANT_HOVERCAR #######
-      #if defined(VARIANT_HOVERCAR) || defined(VARIANT_SKATEBOARD) || defined(ELECTRIC_BRAKE_ENABLE)
-        uint16_t speedBlend;                                        // Calculate speed Blend, a number between [0, 1] in fixdt(0,16,15)
+      uint16_t speedBlend; // Calculate speed Blend, a number between [0, 1] in fixdt(0,16,15)
+      if (CONTROL_VARIANT == VARIANT_HOVERCAR || CONTROL_VARIANT == VARIANT_SKATEBOARD || ELECTRIC_BRAKE_ENABLE) {
         speedBlend = (uint16_t)(((CLAMP(speedAvgAbs,10,60) - 10) << 15) / 50); // speedBlend [0,1] is within [10 rpm, 60rpm]
-      #endif
+      }
 
-      #ifdef STANDSTILL_HOLD_ENABLE
+      if (STANDSTILL_HOLD_ENABLE) {
         standstillHold();                                           // Apply Standstill Hold functionality. Only available and makes sense for VOLTAGE or TORQUE Mode
-      #endif
+      }
 
-      #ifdef VARIANT_HOVERCAR
-      if (inIdx == CONTROL_ADC) {                                   // Only use use implementation below if pedals are in use (ADC input)
+      if (CONTROL_VARIANT == VARIANT_HOVERCAR) {
+      if (inIdx == CONTROL_ADC_INDEX) {                                   // Only use use implementation below if pedals are in use (ADC input)
         if (speedAvgAbs < 60) {                                     // Check if Hovercar is physically close to standstill to enable Double tap detection on Brake pedal for Reverse functionality
           multipleTapDet(input1[inIdx].cmd, HAL_GetTick(), &MultipleTapBrake); // Brake pedal in this case is "input1" variable
         }
@@ -225,23 +225,23 @@ int app_run(void) {
           cruiseControl((uint8_t)rtP_Left.b_cruiseCtrlEna);         // Cruise control deactivated by Brake pedal if it was active
         }
       }
-      #endif
+      }
 
-      #ifdef ELECTRIC_BRAKE_ENABLE
+      if (ELECTRIC_BRAKE_ENABLE) {
         electricBrake(speedBlend, MultipleTapBrake.b_multipleTap);  // Apply Electric Brake. Only available and makes sense for TORQUE Mode
-      #endif
+      }
 
-      #ifdef VARIANT_HOVERCAR
-      if (inIdx == CONTROL_ADC) {                                   // Only use use implementation below if pedals are in use (ADC input)
+      if (CONTROL_VARIANT == VARIANT_HOVERCAR) {
+      if (inIdx == CONTROL_ADC_INDEX) {                                   // Only use use implementation below if pedals are in use (ADC input)
         if (speedAvg > 0) {                                         // Make sure the Brake pedal is opposite to the direction of motion AND it goes to 0 as we reach standstill (to avoid Reverse driving by Brake pedal) 
           input1[inIdx].cmd = (int16_t)((-input1[inIdx].cmd * speedBlend) >> 15);
         } else {
           input1[inIdx].cmd = (int16_t)(( input1[inIdx].cmd * speedBlend) >> 15);
         }
       }
-      #endif
+      }
 
-      #ifdef VARIANT_SKATEBOARD
+      if (CONTROL_VARIANT == VARIANT_SKATEBOARD) {
         if (input2[inIdx].cmd < 0) {                                // When Throttle is negative, it acts as brake. This condition is to make sure it goes to 0 as we reach standstill (to avoid Reverse driving) 
           if (speedAvg > 0) {                                       // Make sure the braking is opposite to the direction of motion
             input2[inIdx].cmd  = (int16_t)(( input2[inIdx].cmd * speedBlend) >> 15);
@@ -249,7 +249,7 @@ int app_run(void) {
             input2[inIdx].cmd  = (int16_t)((-input2[inIdx].cmd * speedBlend) >> 15);
           }
         }
-      #endif
+      }
 
       // ####### LOW-PASS FILTER #######
       rateLimiter16(input1[inIdx].cmd, rate, &steerRateFixdt);
@@ -260,14 +260,14 @@ int app_run(void) {
       speed = (int16_t)(speedFixdt >> 16);  // convert fixed-point to integer
 
       // ####### VARIANT_HOVERCAR #######
-      #ifdef VARIANT_HOVERCAR
-      if (inIdx == CONTROL_ADC) {               // Only use use implementation below if pedals are in use (ADC input)
+      if (CONTROL_VARIANT == VARIANT_HOVERCAR) {
+      if (inIdx == CONTROL_ADC_INDEX) {               // Only use use implementation below if pedals are in use (ADC input)
 
-        #ifdef MULTI_MODE_DRIVE
+        if (MULTI_MODE_DRIVE) {
         if (speed >= max_speed) {
           speed = max_speed;
         }
-        #endif
+        }
 
         if (!MultipleTapBrake.b_multipleTap) {  // Check driving direction
           speed = steer + speed;                // Forward driving: in this case steer = Brake, speed = Throttle
@@ -276,32 +276,32 @@ int app_run(void) {
         }
         steer = 0;                              // Do not apply steering to avoid side effects if STEER_COEFFICIENT is NOT 0
       }
-      #endif
+      }
 
-      #if defined(TANK_STEERING) && !defined(VARIANT_HOVERCAR) && !defined(VARIANT_SKATEBOARD) 
+      if (TANK_STEERING && CONTROL_VARIANT != VARIANT_HOVERCAR && CONTROL_VARIANT != VARIANT_SKATEBOARD ) {
         // Tank steering (no mixing)
         cmdL = steer; 
         cmdR = speed;
-      #else 
+      } else { 
         // ####### MIXER #######
         mixerFcn(speed << 4, steer << 4, &cmdR, &cmdL);   // This function implements the equations above
-      #endif
+      }
 
 
       // ####### SET OUTPUTS (if the target change is less than +/- 100) #######
-      #ifdef INVERT_R_DIRECTION
+      if (INVERT_R_DIRECTION) {
         pwmr = cmdR;
-      #else
+      } else {
         pwmr = -cmdR;
-      #endif
-      #ifdef INVERT_L_DIRECTION
+      }
+      if (INVERT_L_DIRECTION) {
         pwml = -cmdL;
-      #else
+      } else {
         pwml = cmdL;
-      #endif
-    #endif
+      }
+    }
 
-    #ifdef VARIANT_TRANSPOTTER
+    if (CONTROL_VARIANT == VARIANT_TRANSPOTTER) {
       distance    = CLAMP(input1[inIdx].cmd - 180, 0, 4095);
       steering    = (input2[inIdx].cmd - 2048) / 2048.0;
       distanceErr = distance - (int)(setDistance * 1345);
@@ -313,16 +313,16 @@ int app_run(void) {
           enable = 1;
         }
         if (distanceErr > -300) {
-          #ifdef INVERT_R_DIRECTION
+          if (INVERT_R_DIRECTION) {
             pwmr = cmdR;
-          #else
+          } else {
             pwmr = -cmdR;
-          #endif
-          #ifdef INVERT_L_DIRECTION
+          }
+          if (INVERT_L_DIRECTION) {
             pwml = -cmdL;
-          #else
+          } else {
             pwml = cmdL;
-          #endif
+          }
 
           if (checkRemote) {
             if (!HAL_GPIO_ReadPin(LED_PORT, LED_PIN)) {
@@ -342,11 +342,11 @@ int app_run(void) {
         pwml = 0;
         pwmr = 0;
         enable = 0;
-        #ifdef SUPPORT_LCD
+        if (SUPPORT_LCD) {
           LCD_SetLocation(&lcd,  0, 0); LCD_WriteString(&lcd, "Len:");
           LCD_SetLocation(&lcd,  8, 0); LCD_WriteString(&lcd, "m(");
           LCD_SetLocation(&lcd, 14, 0); LCD_WriteString(&lcd, "m)");
-        #endif
+        }
         hal_delay(1000);
         nunchuk_connected = 0;
       }
@@ -354,32 +354,31 @@ int app_run(void) {
       if ((distance / 1345.0) - setDistance > 0.5 && (lastDistance / 1345.0) - setDistance > 0.5) { // Error, robot too far away!
         enable = 0;
         beepLong(5);
-        #ifdef SUPPORT_LCD
+        if (SUPPORT_LCD) {
           LCD_ClearDisplay(&lcd);
           hal_delay(5);
           LCD_SetLocation(&lcd, 0, 0); LCD_WriteString(&lcd, "Emergency Off!");
           LCD_SetLocation(&lcd, 0, 1); LCD_WriteString(&lcd, "Keeper too fast.");
-        #endif
+        }
         poweroff();
       }
 
-      #ifdef SUPPORT_NUNCHUK
+      if (SUPPORT_NUNCHUK) {
         if (transpotter_counter % 500 == 0) {
           if (nunchuk_connected == 0 && enable == 0) {
-              if(Nunchuk_Read() == NUNCHUK_CONNECTED) {
-                #ifdef SUPPORT_LCD
-                  LCD_SetLocation(&lcd, 0, 0); LCD_WriteString(&lcd, "Nunchuk Control");
-                #endif
-                nunchuk_connected = 1;
-	      }
-	    } else {
-              nunchuk_connected = 0;
-	    }
+            if(Nunchuk_Read() == NUNCHUK_CONNECTED) {
+              if (SUPPORT_LCD) {
+                LCD_SetLocation(&lcd, 0, 0); LCD_WriteString(&lcd, "Nunchuk Control");
+              }
+              nunchuk_connected = 1;
+            }
+          } else {
+            nunchuk_connected = 0;
           }
-        }   
-      #endif
+        }
+      }
 
-      #ifdef SUPPORT_LCD
+      if (SUPPORT_LCD) {
         if (transpotter_counter % 100 == 0) {
           if (LCDerrorFlag == 1 && enable == 0) {
 
@@ -392,23 +391,23 @@ int app_run(void) {
             // LCD_SetLocation(&lcd, 11, 1); LCD_WriteFloat(&lcd,MAX(ABS(currentR), ABS(currentL)),2);
           }
         }
-      #endif
+      }
       transpotter_counter++;
-    #endif
+    }
 
     // ####### SIDEBOARDS HANDLING #######
-    #if defined(SIDEBOARD_SERIAL_USART2)
+    if (SIDEBOARD_SERIAL_USART2_ENABLED) {
       sideboardSensors((uint8_t)Sideboard_L.sensors);
-    #endif
-    #if defined(FEEDBACK_SERIAL_USART2)
+    }
+    if (FEEDBACK_SERIAL_USART2_ENABLED) {
       sideboardLeds(&sideboard_leds_L);
-    #endif
-    #if defined(SIDEBOARD_SERIAL_USART3)
+    }
+    if (SIDEBOARD_SERIAL_USART3_ENABLED) {
       sideboardSensors((uint8_t)Sideboard_R.sensors);
-    #endif
-    #if defined(FEEDBACK_SERIAL_USART3)
+    }
+    if (FEEDBACK_SERIAL_USART3_ENABLED) {
       sideboardLeds(&sideboard_leds_R);
-    #endif
+    }
     
 
     // ####### CALC BOARD TEMPERATURE #######
@@ -425,11 +424,11 @@ int app_run(void) {
     dc_curr       = left_dc_curr + right_dc_curr;            // Total DC Link Current * 100
 
     // ####### DEBUG SERIAL OUT #######
-    #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
+    if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
       if (main_loop_counter % 25 == 0) {    // Send data periodically every 125 ms      
-        #if defined(DEBUG_SERIAL_PROTOCOL)
+        if (DEBUG_SERIAL_PROTOCOL) {
           process_debug();
-        #else
+        } else {
           printf("in1:%i in2:%i cmdL:%i cmdR:%i BatADC:%i BatV:%i TempADC:%i Temp:%i \r\n",
             input1[inIdx].raw,        // 1: INPUT1
             input2[inIdx].raw,        // 2: INPUT2
@@ -439,12 +438,12 @@ int app_run(void) {
             batVoltageCalib,          // 6: for verifying battery voltage calibration
             board_temp_adcFilt,       // 7: for board temperature calibration
             board_temp_deg_c);        // 8: for verifying board temperature calibration
-        #endif
+        }
       }
-    #endif
+    }
 
     // ####### FEEDBACK SERIAL OUT #######
-    #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
+    if (FEEDBACK_SERIAL_USART2_ENABLED || FEEDBACK_SERIAL_USART3_ENABLED) {
       if (main_loop_counter % 2 == 0) {    // Send data periodically every 10 ms
         Feedback.start	        = (uint16_t)SERIAL_START_FRAME;
         Feedback.cmd1           = (int16_t)input1[inIdx].cmd;
@@ -454,7 +453,7 @@ int app_run(void) {
         Feedback.batVoltage	    = (int16_t)batVoltageCalib;
         Feedback.boardTemp	    = (int16_t)board_temp_deg_c;
 
-        #if defined(FEEDBACK_SERIAL_USART2)
+        if (FEEDBACK_SERIAL_USART2_ENABLED) {
           if(__HAL_DMA_GET_COUNTER(huart2.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_L;
             Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
@@ -462,8 +461,8 @@ int app_run(void) {
 
             HAL_UART_Transmit_DMA(&huart2, (uint8_t *)&Feedback, sizeof(Feedback));
           }
-        #endif
-        #if defined(FEEDBACK_SERIAL_USART3)
+        }
+        if (FEEDBACK_SERIAL_USART3_ENABLED) {
           if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_R;
             Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
@@ -471,23 +470,23 @@ int app_run(void) {
 
             HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
           }
-        #endif
+        }
       }
-    #endif
+    }
 
     // ####### POWEROFF BY POWER-BUTTON #######
     poweroffPressCheck();
 
     // ####### BEEP AND EMERGENCY POWEROFF #######
     if (TEMP_POWEROFF_ENABLE && board_temp_deg_c >= TEMP_POWEROFF && speedAvgAbs < 20){  // poweroff before mainboard burns OR low bat 3
-      #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
+      if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
         printf("Powering off, temperature is too high\r\n");
-      #endif
+      }
       poweroff();
     } else if ( BAT_DEAD_ENABLE && batVoltage < BAT_DEAD && speedAvgAbs < 20){
-      #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
+      if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
         printf("Powering off, battery voltage is too low\r\n");
-      #endif
+      }
       poweroff();
     } else if (rtY_Left.z_errCode || rtY_Right.z_errCode) {                                           // 1 beep (low pitch): Motor error, disable motors
       enable = 0;
@@ -520,17 +519,17 @@ int app_run(void) {
       inactivity_timeout_counter = 0;
     }
 
-    #if defined(CRUISE_CONTROL_SUPPORT) || defined(STANDSTILL_HOLD_ENABLE)
+    if (CRUISE_CONTROL_SUPPORT || STANDSTILL_HOLD_ENABLE) {
       if ((abs(rtP_Left.n_cruiseMotTgt)  > 50 && rtP_Left.b_cruiseCtrlEna) || 
           (abs(rtP_Right.n_cruiseMotTgt) > 50 && rtP_Right.b_cruiseCtrlEna)) {
         inactivity_timeout_counter = 0;
       }
-    #endif
+    }
 
     if (inactivity_timeout_counter > (INACTIVITY_TIMEOUT * 60 * 1000) / (DELAY_IN_MAIN_LOOP + 1)) {  // rest of main loop needs maybe 1ms
-      #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
+      if (DEBUG_SERIAL_USART2_ENABLED || DEBUG_SERIAL_USART3_ENABLED) {
         printf("Powering off, wheels were inactive for too long\r\n");
-      #endif
+      }
       poweroff();
     }
 

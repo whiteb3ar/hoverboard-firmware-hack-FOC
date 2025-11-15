@@ -53,8 +53,7 @@ DMA_HandleTypeDef hdma_usart3_rx;
 DMA_HandleTypeDef hdma_usart3_tx;
 volatile adc_buf_t adc_buffer;
 
-
-#if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
+//#if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
  /* USART2 init function */
  void UART2_Init(void)
 {
@@ -78,9 +77,9 @@ volatile adc_buf_t adc_buffer;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   HAL_UART_Init(&huart2);
 }
-#endif
+//#endif
 
-#if defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
+//#if defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
 /* USART3 init function */
 void UART3_Init(void)
 {
@@ -105,9 +104,9 @@ void UART3_Init(void)
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
   HAL_UART_Init(&huart3);
 }
-#endif
+//#endif
 
-#if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || \
+//#if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || \
     defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
 void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 {
@@ -276,7 +275,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
   /* USER CODE END USART3_MspDeInit 1 */
   }
 } 
-#endif
+//#endif
 
 DMA_HandleTypeDef hdma_i2c2_rx;
 DMA_HandleTypeDef hdma_i2c2_tx;
@@ -390,13 +389,12 @@ void MX_GPIO_Init(void) {
   GPIO_InitStruct.Pin = CHARGER_PIN;
   HAL_GPIO_Init(CHARGER_PORT, &GPIO_InitStruct);
 
-  #if defined(SUPPORT_BUTTONS_LEFT) || defined(SUPPORT_BUTTONS_RIGHT)
-  GPIO_InitStruct.Pin = BUTTON1_PIN;
-  HAL_GPIO_Init(BUTTON1_PORT, &GPIO_InitStruct);
-  GPIO_InitStruct.Pin = BUTTON2_PIN;
-  HAL_GPIO_Init(BUTTON2_PORT, &GPIO_InitStruct);
-  #endif
-  
+  if (SUPPORT_BUTTONS_LEFT || SUPPORT_BUTTONS_RIGHT) {
+    GPIO_InitStruct.Pin = BUTTON1_PIN;
+    HAL_GPIO_Init(BUTTON1_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = BUTTON2_PIN;
+    HAL_GPIO_Init(BUTTON2_PORT, &GPIO_InitStruct);
+  }
 
   GPIO_InitStruct.Pull = GPIO_NOPULL;
 
@@ -440,12 +438,12 @@ void MX_GPIO_Init(void) {
   HAL_GPIO_Init(DCLINK_PORT, &GPIO_InitStruct);
 
   //Analog in
-  #if !defined(SUPPORT_BUTTONS_LEFT)
-  GPIO_InitStruct.Pin = GPIO_PIN_3;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-  GPIO_InitStruct.Pin = GPIO_PIN_2;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-  #endif
+  if (!SUPPORT_BUTTONS_LEFT) {
+    GPIO_InitStruct.Pin = GPIO_PIN_3;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = GPIO_PIN_2;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  }
 
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
 
@@ -630,11 +628,11 @@ void MX_ADC1_Init(void) {
   sConfig.Rank    = 3;
   HAL_ADC_ConfigChannel(&hadc1, &sConfig);
 
-  #if BOARD_VARIANT == 0
-  sConfig.Channel = ADC_CHANNEL_12;  // pc2 vbat
-  #elif BOARD_VARIANT == 1
-  sConfig.Channel = ADC_CHANNEL_1;   // pa1 vbat
-  #endif
+  if (BOARD_VARIANT == 0) {
+    sConfig.Channel = ADC_CHANNEL_12;  // pc2 vbat
+  } else if (BOARD_VARIANT == 1) {
+    sConfig.Channel = ADC_CHANNEL_1;   // pa1 vbat
+  }
   sConfig.Rank    = 4;
   HAL_ADC_ConfigChannel(&hadc1, &sConfig);
 

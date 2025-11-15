@@ -191,7 +191,7 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
 #define ADC_MARGIN                100     // ADC input margin applied on the raw ADC min and max to make sure the MIN and MAX values are reached even in the presence of noise
 #define ADC_PROTECT_TIMEOUT       100     // ADC Protection: number of wrong / missing input commands before safety state is taken
 #define ADC_PROTECT_THRESH        200     // ADC Protection threshold below/above the MIN/MAX ADC values
-#define AUTO_CALIBRATION_ENA              // Enable/Disable input auto-calibration by holding power button pressed. Un-comment this if auto-calibration is not needed.
+extern uint32_t AUTO_CALIBRATION_ENA;              // Enable/Disable input auto-calibration by holding power button pressed. Un-comment this if auto-calibration is not needed.
 
 /* FILTER is in fixdt(0,16,16): VAL_fixedPoint = VAL_floatingPoint * 2^16. In this case 6553 = 0.1 * 2^16
  * Value of COEFFICIENT is in fixdt(1,16,14)
@@ -272,9 +272,72 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
 // #define DEBUG_I2C_LCD                // standard 16x2 or larger text-lcd via i2c-converter on right sensor board cable
 // ########################### END OF DEBUG LCD ############################
 
+extern uint32_t CONTROL_ADC_ENABLED;
+extern uint32_t CONTROL_ADC_INDEX;
+extern uint32_t DEBUG_I2C_LCD;
+extern uint32_t DEBUG_SERIAL_USART2_ENABLED;
+extern uint32_t CONTROL_SERIAL_USART2_ENABLED;
+extern uint32_t SIDEBOARD_SERIAL_USART2_ENABLED;
+extern uint32_t SIDEBOARD_SERIAL_USART2_INDEX;
+extern uint32_t DEBUG_SERIAL_USART3_ENABLED;
 
+extern uint32_t ELECTRIC_BRAKE_ENABLE;
+extern uint32_t ELECTRIC_BRAKE_MAX;
+extern uint32_t ELECTRIC_BRAKE_THRES;
+
+extern uint32_t CRUISE_CONTROL_SUPPORT;
+extern uint32_t ADC_ALTERNATE_CONNECT;
+extern uint32_t CONTROL_SERIAL_USART2_INDEX;
+extern uint32_t IBUS_NUM_CHANNELS;
+extern uint32_t CONTROL_SERIAL_USART3_ENABLED;
+extern uint32_t CONTROL_SERIAL_USART3_INDEX;
+extern uint32_t SIDEBOARD_SERIAL_USART3_ENABLED;
+extern uint32_t SIDEBOARD_SERIAL_USART3_INDEX;
+extern uint32_t CONTROL_IBUS;
+extern uint32_t CONTROL_PPM_LEFT_INDEX;
+extern uint32_t CONTROL_PPM_RIGHT_INDEX;
+extern uint32_t SUPPORT_BUTTONS;
+extern uint32_t CONTROL_PWM_LEFT_INDEX;
+extern uint32_t CONTROL_PWM_RIGHT_INDEX;
+extern uint32_t FEEDBACK_SERIAL_USART2_ENABLED;
+extern uint32_t FEEDBACK_SERIAL_USART3_ENABLED;
+
+extern uint32_t DUAL_INPUTS;
+
+extern uint32_t DEBUG_SERIAL_PROTOCOL;
+extern uint32_t IBUS_LENGTH;
+extern uint32_t IBUS_COMMAND;
+extern uint32_t CONTROL_NUNCHUK_ENABLED;
+extern uint32_t SUPPORT_NUNCHUK;
+extern uint32_t CONTROL_NUNCHUK_INDEX;
+extern uint32_t GAMETRAK_CONNECTION_NORMAL;
+extern uint32_t GAMETRAK_CONNECTION_ALTERNATE;
+
+typedef enum {
+  VARIANT_TRANSPOTTER,
+  VARIANT_ADC,
+  VARIANT_USART,
+  VARIANT_NUNCHUK,
+  VARIANT_PPM,
+  VARIANT_PWM,
+  VARIANT_IBUS,
+  VARIANT_HOVERCAR,
+  VARIANT_HOVERBOARD,
+  VARIANT_SKATEBOARD
+} ControlVariant;
+
+extern ControlVariant CONTROL_VARIANT;
+
+extern uint32_t INVERT_L_DIRECTION;
+extern uint32_t INVERT_R_DIRECTION;
+
+extern uint32_t STANDSTILL_HOLD_ENABLE;
+
+extern uint32_t FLASH_WRITE_KEY;
 
 // ################################# VARIANT_ADC SETTINGS ############################
+extern uint32_t TANK_STEERING;                   // use for tank steering, each input controls each wheel 
+
 #ifdef VARIANT_ADC
 /* CONTROL VIA TWO POTENTIOMETERS
  * Connect potis to left sensor board cable (0 to 3.3V) (do NOT use the red 15V wire!)
@@ -312,7 +375,6 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
     #define DEBUG_SERIAL_USART3           // right sensor board cable, disable if I2C (nunchuk or lcd) is used!
   #endif
 
-  // #define TANK_STEERING                   // use for tank steering, each input controls each wheel 
   // #define ADC_ALTERNATE_CONNECT           // use to swap ADC inputs
   // #define SUPPORT_BUTTONS_LEFT            // use left sensor board cable for button inputs.  Disable DEBUG_SERIAL_USART2!
   // #define SUPPORT_BUTTONS_RIGHT           // use right sensor board cable for button inputs. Disable DEBUG_SERIAL_USART3!
@@ -385,7 +447,15 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
 #endif
 // ############################# END OF VARIANT_NUNCHUK SETTINGS #########################
 
+#define PPM_NUM_CHANNELS_MAX        10
+extern uint32_t PPM_NUM_CHANNELS;
 
+uint32_t CONTROL_PPM_LEFT_ENABLED;
+uint32_t CONTROL_PPM_RIGHT_ENABLED;
+uint32_t CONTROL_PWM_LEFT_ENABLED;
+uint32_t CONTROL_PWM_RIGHT_ENABLED;
+uint32_t SUPPORT_BUTTONS_LEFT;
+uint32_t SUPPORT_BUTTONS_RIGHT;
 
 // ################################# VARIANT_PPM SETTINGS ##############################
 #ifdef VARIANT_PPM
@@ -465,7 +535,7 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
 #endif
 // ############################# END OF VARIANT_PWM SETTINGS ############################
 
-
+#define IBUS_NUM_CHANNELS_MAX 20
 
 // ################################# VARIANT_IBUS SETTINGS ##############################
 #ifdef VARIANT_IBUS
@@ -509,6 +579,25 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
 
 
 // ############################ VARIANT_HOVERCAR SETTINGS ############################
+extern uint32_t MULTI_MODE_DRIVE;                  // This option enables the selection of 3 driving modes at start-up using combinations of Brake and Throttle pedals (see below)
+// BEGINNER MODE:     Power ON + Brake [released] + Throttle [released or pressed]
+extern uint32_t MULTI_MODE_DRIVE_M1_MAX;
+extern uint32_t MULTI_MODE_DRIVE_M1_RATE;
+extern uint32_t MULTI_MODE_M1_I_MOT_MAX;
+extern uint32_t MULTI_MODE_M1_N_MOT_MAX;
+
+// INTERMEDIATE MODE: Power ON + Brake [pressed] + Throttle [released]
+extern uint32_t MULTI_MODE_DRIVE_M2_MAX;
+extern uint32_t MULTI_MODE_DRIVE_M2_RATE;
+extern uint32_t MULTI_MODE_M2_I_MOT_MAX;
+extern uint32_t MULTI_MODE_M2_N_MOT_MAX;
+
+// ADVANCED MODE:    Power ON + Brake [pressed] + Throttle [pressed]
+extern uint32_t MULTI_MODE_DRIVE_M3_MAX;
+extern uint32_t MULTI_MODE_DRIVE_M3_RATE;
+extern uint32_t MULTI_MODE_M3_I_MOT_MAX;
+extern uint32_t MULTI_MODE_M3_N_MOT_MAX;
+
 #ifdef VARIANT_HOVERCAR
   #define FLASH_WRITE_KEY         0x1107  // Flash memory writing key. Change this key to ignore the input calibrations from the flash memory and use the ones in config.h
   #undef  CTRL_MOD_REQ
@@ -536,28 +625,6 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
   // #define ELECTRIC_BRAKE_ENABLE             // [-] Flag to enable electric brake and replace the motor "freewheel" with a constant braking when the input torque request is 0. Only available and makes sense for TORQUE mode.
   // #define ELECTRIC_BRAKE_MAX    100         // (0, 500) Maximum electric brake to be applied when input torque request is 0 (pedal fully released).
   // #define ELECTRIC_BRAKE_THRES  120         // (0, 500) Threshold below at which the electric brake starts engaging.
-
-  #define MULTI_MODE_DRIVE                  // This option enables the selection of 3 driving modes at start-up using combinations of Brake and Throttle pedals (see below)
-  #ifdef MULTI_MODE_DRIVE
-      // BEGINNER MODE:     Power ON + Brake [released] + Throttle [released or pressed]
-      #define MULTI_MODE_DRIVE_M1_MAX   175
-      #define MULTI_MODE_DRIVE_M1_RATE  250
-      #define MULTI_MODE_M1_I_MOT_MAX   4
-      #define MULTI_MODE_M1_N_MOT_MAX   30
-
-      // INTERMEDIATE MODE: Power ON + Brake [pressed] + Throttle [released]
-      #define MULTI_MODE_DRIVE_M2_MAX   500
-      #define MULTI_MODE_DRIVE_M2_RATE  300
-      #define MULTI_MODE_M2_I_MOT_MAX   8
-      #define MULTI_MODE_M2_N_MOT_MAX   80
-
-      // ADVANCED MODE:    Power ON + Brake [pressed] + Throttle [pressed]
-      #define MULTI_MODE_DRIVE_M3_MAX   1000
-      #define MULTI_MODE_DRIVE_M3_RATE  450
-      #define MULTI_MODE_M3_I_MOT_MAX   I_MOT_MAX
-      #define MULTI_MODE_M3_N_MOT_MAX   N_MOT_MAX
-  #endif
-
 #endif
 
 // Multiple tap detection: default DOUBLE Tap on Brake pedal (4 pulses)
@@ -591,15 +658,18 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
 
 
 // ################################# VARIANT_TRANSPOTTER SETTINGS ############################
+extern uint32_t SUPPORT_LCD;
+#define ROT_P               1.2       // P coefficient for the direction controller. Positive / Negative values to invert gametrak steering direction.
+
 //TODO ADD VALIDATION
 #ifdef VARIANT_TRANSPOTTER
   #define FLASH_WRITE_KEY     0x1009    // Flash memory writing key. Change this key to ignore the input calibrations from the flash memory and use the ones in config.h
   #define CONTROL_GAMETRAK
-  #define SUPPORT_LCD
+  
   // #define SUPPORT_NUNCHUK
   #define GAMETRAK_CONNECTION_NORMAL    // for normal wiring according to the wiki instructions
   // #define GAMETRAK_CONNECTION_ALTERNATE // use this define instead if you messed up the gametrak ADC wiring (steering is speed, and length of the wire is steering)
-  #define ROT_P               1.2       // P coefficient for the direction controller. Positive / Negative values to invert gametrak steering direction.
+  
   // during nunchuk control (only relevant when activated)
   #define SPEED_COEFFICIENT   14746     // 0.9f - higher value == stronger. 0.0 to ~2.0?
   #define STEER_COEFFICIENT   8192      // 0.5f - higher value == stronger. if you do not want any steering, set it to 0.0; 0.0 to 1.0
@@ -612,6 +682,9 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
 
 
 // ################################# VARIANT_SKATEBOARD SETTINGS ##############################
+
+extern uint32_t INPUT_BRK;      // (-1000 - 0) Change this value to adjust the braking amount
+
 #ifdef VARIANT_SKATEBOARD
 /* ###### CONTROL VIA RC REMOTE ######
  * right sensor board cable. Connect PB10 to channel 1 and PB11 to channel 2 on receiver.
@@ -645,8 +718,17 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
 // ############################# END OF VARIANT_SKATEBOARD SETTINGS ############################
 
 
+extern uint32_t SERIAL_START_FRAME; // [-] Start frame definition for serial commands
+#define SERIAL_BUFFER_SIZE      64  // [bytes] Size of Serial Rx buffer. Make sure it is always larger than the structure size
+#define SERIAL_TIMEOUT          160                     // [-] Serial timeout duration for the received data. 160 ~= 0.8 sec. Calculation: 0.8 sec / 0.005 sec
 
 // ########################### UART SETIINGS ############################
+#define USART2_BAUD           115200                  // UART2 baud rate (long wired cable)
+#define USART2_WORDLENGTH     UART_WORDLENGTH_8B      // UART_WORDLENGTH_8B or UART_WORDLENGTH_9B
+
+#define USART3_BAUD           115200                  // UART3 baud rate (short wired cable)
+#define USART3_WORDLENGTH       UART_WORDLENGTH_8B      // UART_WORDLENGTH_8B or UART_WORDLENGTH_9B
+
 #if defined(FEEDBACK_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || \
     defined(FEEDBACK_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
   #define SERIAL_START_FRAME      0xABCD                  // [-] Start frame definition for serial commands
@@ -666,8 +748,6 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
   #define USART3_WORDLENGTH       UART_WORDLENGTH_8B      // UART_WORDLENGTH_8B or UART_WORDLENGTH_9B
 #endif
 // ########################### UART SETIINGS ############################
-
-
 
 // ############################### APPLY DEFAULT SETTINGS ###############################
 #ifndef RATE
@@ -692,10 +772,10 @@ extern uint8_t MOTOR_RIGHT_ENA;  // 1 = enabled, 0 = disabled
 
 
 // ############################### VALIDATE SETTINGS ###############################
-#if !defined(VARIANT_ADC) && !defined(VARIANT_USART) && !defined(VARIANT_NUNCHUK) && !defined(VARIANT_PPM) && !defined(VARIANT_PWM) && \
-    !defined(VARIANT_IBUS) && !defined(VARIANT_HOVERCAR) && !defined(VARIANT_HOVERBOARD) && !defined(VARIANT_TRANSPOTTER) && !defined(VARIANT_SKATEBOARD)
-  #error Variant not defined! Please check platformio.ini or Inc/config.h for available variants.
-#endif
+// #if !defined(VARIANT_ADC) && !defined(VARIANT_USART) && !defined(VARIANT_NUNCHUK) && !defined(VARIANT_PPM) && !defined(VARIANT_PWM) && \
+//     !defined(VARIANT_IBUS) && !defined(VARIANT_HOVERCAR) && !defined(VARIANT_HOVERBOARD) && !defined(VARIANT_TRANSPOTTER) && !defined(VARIANT_SKATEBOARD)
+//   #error Variant not defined! Please check platformio.ini or Inc/config.h for available variants.
+// #endif
 
 
 // General checks
